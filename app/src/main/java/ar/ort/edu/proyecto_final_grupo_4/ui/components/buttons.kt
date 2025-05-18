@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 @Composable
 fun CustomButton(
@@ -21,13 +22,13 @@ fun CustomButton(
     Button(
         onClick = onClick,
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(8.dp),
+        shape = RoundedCornerShape(15.dp),
         colors = androidx.compose.material3.ButtonDefaults.buttonColors(
             containerColor = buttonColor
         )
     ) {
         Text(text = text,
-            style = MaterialTheme.typography.bodyLarge )
+            style = MaterialTheme.typography.bodyLarge.copy(fontSize = 25.sp))
     }
 }
 
