@@ -46,12 +46,12 @@ fun MedicineCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // Sección izquierda con tiempo, nombre y dosis
+
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.weight(1f)
             ) {
-                // Icono de reloj
+
                 Icon(
                     painter = painterResource(id = R.drawable.clock_icon),
                     contentDescription = "Hora del medicamento",
@@ -61,7 +61,7 @@ fun MedicineCard(
 
                 Spacer(modifier = Modifier.width(8.dp))
 
-                // Texto de tiempo
+
                 Text(
                     text = time,
                     fontSize = 14.sp,
@@ -71,7 +71,7 @@ fun MedicineCard(
 
                 Spacer(modifier = Modifier.width(16.dp))
 
-                // Información del medicamento
+
                 Column {
                     Text(
                         text = name,
@@ -87,7 +87,7 @@ fun MedicineCard(
                 }
             }
 
-            // Icono de estado
+
             Icon(
                 imageVector = when (status) {
                     MedicineStatus.WARNING -> Icons.Default.Warning
