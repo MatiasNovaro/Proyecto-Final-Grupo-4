@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Proyecto-Final-Grupo-4</string>
+    <string name="db_name">app_medicamentos</string>
 </resources>
