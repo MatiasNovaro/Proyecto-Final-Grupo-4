@@ -40,7 +40,7 @@ fun DailyMedicineCard(
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
-            // Header con el día
+
             Text(
                 text = dayTitle,
                 fontSize = 16.sp,
@@ -49,14 +49,13 @@ fun DailyMedicineCard(
                 modifier = Modifier.padding(bottom = 12.dp)
             )
 
-            // Línea divisoria
             HorizontalDivider(
                 modifier = Modifier.padding(bottom = 16.dp),
                 thickness = 1.dp,
-                color = Color.Gray.copy(alpha = 0.3f)
+                color = Color.Black
             )
 
-            // Lista de medicamentos
+
             Column(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
