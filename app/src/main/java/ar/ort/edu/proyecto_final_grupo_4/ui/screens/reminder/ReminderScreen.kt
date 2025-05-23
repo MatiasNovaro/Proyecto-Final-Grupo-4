@@ -10,6 +10,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color.Companion.Black
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -17,16 +18,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ar.ort.edu.proyecto_final_grupo_4.R
 import ar.ort.edu.proyecto_final_grupo_4.ui.components.CustomButton
-import ar.ort.edu.proyecto_final_grupo_4.ui.theme.Purple40
+import ar.ort.edu.proyecto_final_grupo_4.ui.theme.White
 import androidx.compose.ui.tooling.preview.Preview
-import ar.ort.edu.proyecto_final_grupo_4.ui.theme.PurpleGrey40
+import ar.ort.edu.proyecto_final_grupo_4.ui.theme.LightCream
+import ar.ort.edu.proyecto_final_grupo_4.ui.theme.PrimaryOrange
 
 @Composable
 fun ReminderScreen(medicineName: String) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Purple40) // Fondo de pantalla con el color primario
+            .background(White) // Fondo de pantalla con el color primario
     ) {
         // Contenido principal
         Column(
@@ -34,7 +36,7 @@ fun ReminderScreen(medicineName: String) {
                 .fillMaxSize()
                 .offset(y = 120.dp) // Desplaza la columna aún más hacia abajo
                 .clip(RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)) // Esquinas superiores redondeadas
-                .background(PurpleGrey40) // Color secundario
+                .background(Black) // Color secundario
                 .padding(24.dp)
                 .align(Alignment.TopCenter), // Alineado en la parte superior con desplazamiento
             horizontalAlignment = Alignment.CenterHorizontally,

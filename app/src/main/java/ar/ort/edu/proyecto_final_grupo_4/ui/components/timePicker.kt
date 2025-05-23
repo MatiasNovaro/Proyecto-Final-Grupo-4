@@ -144,7 +144,7 @@ fun TimeInputStyled(
     }
 }
 
-
+/*
 @Preview(showBackground = true)
 @Composable
 fun TimeInputStyledPreview() {
@@ -155,3 +155,4 @@ fun TimeInputStyledPreview() {
         )
     }
 }
+*/
