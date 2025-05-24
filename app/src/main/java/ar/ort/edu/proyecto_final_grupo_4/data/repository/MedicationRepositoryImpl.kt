@@ -7,9 +7,20 @@ import javax.inject.Inject
 
 class MedicationRepositoryImpl @Inject constructor(
     private val medicationDao: MedicationDao
-): MedicationRepository {
+) : MedicationRepository {
 
     override suspend fun insertMedication(medication: Medication) {
+        // Validar que el nombre del medicamento no esté vacío
+        require(medication.name.isNotBlank()) { "El nombre del medicamento no puede estar vacío." }
+
+        // Validar que el userID sea válido
+        require(medication.userID > 0) { "Debe haber un usuario asignado al medicamento." }
+
+        // Validar que no haya medicamentos duplicados (si es necesario)
+        val existingMedication = medicationDao.getMedicationsByUser(medication.userID)
+            .any { it.name == medication.name }
+        require(!existingMedication) { "El medicamento ya está registrado para este usuario." }
+
         medicationDao.insertMedication(medication)
     }
 
@@ -25,3 +36,4 @@ class MedicationRepositoryImpl @Inject constructor(
         medicationDao.deleteMedication(medication)
     }
 }
+

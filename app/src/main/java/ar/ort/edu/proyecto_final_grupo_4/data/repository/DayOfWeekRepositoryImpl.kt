@@ -10,6 +10,14 @@ class DayOfWeekRepositoryImpl @Inject constructor(
 ) : DayOfWeekRepository {
 
     override suspend fun insertDayOfWeek(day: DayOfWeek) {
+        // Validar que el scheduleID sea válido
+        require(day.scheduleID > 0) { "El horario (scheduleID) no es válido." }
+
+        // Validar que no haya duplicados
+        val existingDays = dayOfWeekDao.getDaysForSchedule(day.scheduleID)
+        val duplicateDay = existingDays.any { it.dayOfWeek == day.dayOfWeek }
+        require(!duplicateDay) { "El día seleccionado ya está asignado a este horario." }
+
         dayOfWeekDao.insertDayOfWeek(day)
     }
 

@@ -10,6 +10,13 @@ class DosageUnitRepositoryImpl @Inject constructor(
 ) : DosageUnitRepository {
 
     override suspend fun insertUnit(unit: DosageUnit) {
+        // Validar que el nombre de la unidad no esté vacío
+        require(unit.name.isNotBlank()) { "El nombre de la unidad de dosificación no puede estar vacío." }
+
+        // Validar que la unidad sea única
+        val existingUnit = dosageUnitDao.getAllUnits().any { it.name == unit.name }
+        require(!existingUnit) { "Ya existe una unidad con ese nombre." }
+
         dosageUnitDao.insertUnit(unit)
     }
 

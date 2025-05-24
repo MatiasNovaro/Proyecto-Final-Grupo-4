@@ -10,6 +10,7 @@ class UserRepositoryImpl @Inject constructor(
 ) : UserRepository {
 
     override suspend fun insertUser(user: User) {
+        require(user.name.isNotBlank()) { "El nombre del usuario no puede estar vacío." }
         userDao.insertUser(user)
     }
 
@@ -18,6 +19,7 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun updateUser(user: User) {
+        require(user.name.isNotBlank()) { "El nombre del usuario no puede estar vacío." }
         userDao.updateUser(user)
     }
 
