@@ -1,15 +1,18 @@
 package ar.ort.edu.proyecto_final_grupo_4.data.network
 
 import android.content.Context
+import androidx.databinding.adapters.Converters
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.TypeConverters
 import ar.ort.edu.proyecto_final_grupo_4.data.dao.DayOfWeekDao
 import ar.ort.edu.proyecto_final_grupo_4.data.dao.DosageUnitDao
 import ar.ort.edu.proyecto_final_grupo_4.data.dao.MedicationDao
 import ar.ort.edu.proyecto_final_grupo_4.data.dao.MedicationLogDao
 import ar.ort.edu.proyecto_final_grupo_4.data.dao.ScheduleDao
 import ar.ort.edu.proyecto_final_grupo_4.data.dao.UserDao
+import ar.ort.edu.proyecto_final_grupo_4.data.utils.TimeConverter
 import ar.ort.edu.proyecto_final_grupo_4.domain.model.*
 
 
@@ -25,6 +28,7 @@ import ar.ort.edu.proyecto_final_grupo_4.domain.model.*
         MedicationLog::class
     ]
 )
+@TypeConverters(TimeConverter::class)
 abstract class AppMedicamentosDB : RoomDatabase() {
     abstract fun userDao(): UserDao
     abstract fun dosageUnitDao(): DosageUnitDao
