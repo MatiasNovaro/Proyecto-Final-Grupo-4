@@ -5,6 +5,7 @@ import androidx.room.PrimaryKey
 
 @Entity( tableName = "dosage_unit")
 data class DosageUnit(
-    @PrimaryKey val dosageUnitID: Int,
+    @PrimaryKey(autoGenerate = true)
+    val dosageUnitID: Int = 0,
     val name: String
 )

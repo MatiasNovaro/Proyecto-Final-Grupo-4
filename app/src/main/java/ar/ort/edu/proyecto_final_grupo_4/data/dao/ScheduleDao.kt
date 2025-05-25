@@ -13,7 +13,7 @@ interface ScheduleDao {
     suspend fun insertSchedule(schedule: Schedule)
 
     @Query("SELECT * FROM schedule WHERE medicationID = :medicationId")
-    suspend fun getSchedulesForMedication(medicationId: Int): List<Schedule>
+    suspend fun getSchedulesForMedication(medicationId: Long): List<Schedule>
 
     @Query("SELECT * FROM schedule WHERE scheduleID = :id")
     suspend fun getById(id: Int): Schedule?

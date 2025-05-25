@@ -18,7 +18,8 @@ import java.time.LocalDateTime
     ]
 )
 data class MedicationLog(
-    @PrimaryKey val logID: Int,
+    @PrimaryKey(autoGenerate = true)
+    val logID: Int=0,
     val scheduleID: Int,
     val wasTaken: LocalDateTime
 )

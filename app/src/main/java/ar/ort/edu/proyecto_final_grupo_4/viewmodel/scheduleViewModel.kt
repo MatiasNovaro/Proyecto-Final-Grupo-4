@@ -22,7 +22,7 @@ class ScheduleViewModel @Inject constructor(
     private val _schedules = MutableStateFlow<List<Schedule>>(emptyList())
     val schedules: StateFlow<List<Schedule>> = _schedules
 
-    fun loadSchedules(medicationId: Int) {
+    fun loadSchedules(medicationId: Long) {
         viewModelScope.launch {
             _schedules.value = scheduleRepository.getSchedulesForMedication(medicationId)
         }

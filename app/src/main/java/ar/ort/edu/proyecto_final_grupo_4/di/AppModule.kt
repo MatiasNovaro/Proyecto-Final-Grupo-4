@@ -39,7 +39,7 @@ class AppModule {
         context,
         AppMedicamentosDB::class.java,
         context.resources.getString(R.string.db_name)
-    ).build()
+    ).fallbackToDestructiveMigration(true).build()
 
     @Provides
     fun provideMedicationDao(db: AppMedicamentosDB): MedicationDao =

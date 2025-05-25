@@ -2,6 +2,7 @@ package ar.ort.edu.proyecto_final_grupo_4.data.utils
 
 import androidx.room.TypeConverter
 import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
 class TimeConverter {
@@ -19,4 +20,10 @@ class TimeConverter {
             LocalDateTime.parse(it, formatter)
         }
     }
+    @TypeConverter
+    fun fromLocalTime(time: LocalTime?): String? = time?.toString()
+
+    @TypeConverter
+    fun toLocalTime(value: String?): LocalTime? = value?.let { LocalTime.parse(it) }
+
 }
