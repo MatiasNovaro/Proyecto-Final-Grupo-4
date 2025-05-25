@@ -1,5 +1,6 @@
 package ar.ort.edu.proyecto_final_grupo_4.ui.screens.homeDashboard
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -30,14 +31,16 @@ import ar.ort.edu.proyecto_final_grupo_4.ui.theme.LightCream
 import ar.ort.edu.proyecto_final_grupo_4.ui.theme.PrimaryOrange
 import ar.ort.edu.proyecto_final_grupo_4.viewmodel.UserViewModel
 
+@SuppressLint("SuspiciousIndentation")
 @Composable
 fun HomeScreen(navController: NavController){
-    val userViewModel: UserViewModel = hiltViewModel()
-    val user by userViewModel.user.collectAsState()
-
+  val userViewModel: UserViewModel = hiltViewModel()
     LaunchedEffect(Unit) {
-       userViewModel.ensureDefaultUser()
+        userViewModel.ensureDefaultUser()
     }
+  val user by userViewModel.user.collectAsState()
+
+
     Column(
         modifier = Modifier
             .fillMaxSize()

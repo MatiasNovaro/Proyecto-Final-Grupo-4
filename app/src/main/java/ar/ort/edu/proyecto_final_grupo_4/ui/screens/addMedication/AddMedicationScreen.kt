@@ -19,11 +19,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.media3.common.util.Log
 import ar.ort.edu.proyecto_final_grupo_4.domain.model.Medication
+import ar.ort.edu.proyecto_final_grupo_4.domain.model.Schedule
 import ar.ort.edu.proyecto_final_grupo_4.viewmodel.MedicationViewModel
 import ar.ort.edu.proyecto_final_grupo_4.viewmodel.UserViewModel
 import ar.ort.edu.proyecto_final_grupo_4.domain.model.DosageUnit
+import ar.ort.edu.proyecto_final_grupo_4.viewmodel.ScheduleViewModel
+import java.time.LocalTime
 import java.util.Calendar
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 @SuppressLint("DefaultLocale")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -31,6 +38,7 @@ import java.util.Calendar
 fun AddMedicationScreen() {
     val userVM: UserViewModel = hiltViewModel()
     val medVM: MedicationViewModel = hiltViewModel()
+    val scheduleVM: ScheduleViewModel = hiltViewModel()
 
     val user by userVM.user.collectAsState()
 
@@ -45,7 +53,8 @@ fun AddMedicationScreen() {
     var showTimePicker by remember { mutableStateOf(false) }
     var hourSelected by remember { mutableStateOf<Int?>(null) }
     var minuteSelected by remember { mutableStateOf<Int?>(null) }
-
+    var showAddUnitDialog by remember { mutableStateOf(false) }
+    var newUnitName by remember { mutableStateOf("") }
     // Create timePickerState at the screen level
     val currentTime = Calendar.getInstance()
     val timePickerState = rememberTimePickerState(
@@ -53,6 +62,9 @@ fun AddMedicationScreen() {
         initialMinute = currentTime.get(Calendar.MINUTE),
         is24Hour = false,
     )
+    val selectedTime = remember {
+        mutableStateOf<LocalTime?>(null)
+    }
 
     LaunchedEffect(Unit) {
         userVM.ensureDefaultUser()
@@ -160,17 +172,63 @@ fun AddMedicationScreen() {
                         }
                     )
                 }
+
+                // Divider + Opción para agregar nueva unidad
+                Divider()
+                DropdownMenuItem(
+                    text = { Text("Agregar nueva unidad...") },
+                    onClick = {
+                        expandedUnits = false
+                        showAddUnitDialog = true
+                    }
+                )
             }
+        }
+
+// Dialog para ingresar una nueva unidad
+        if (showAddUnitDialog) {
+            AlertDialog(
+                onDismissRequest = { showAddUnitDialog = false },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            val trimmedName = newUnitName.trim()
+                            if (trimmedName.isNotEmpty()) {
+                                val newUnit = DosageUnit(dosageUnitID = 0, name = trimmedName)
+                                medVM.addDosageUnit(newUnit) // guarda en DB
+                                selectedUnit = newUnit // selecciona automáticamente
+                                newUnitName = ""
+                                showAddUnitDialog = false
+                            }
+                        }
+                    ) {
+                        Text("Agregar")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = {
+                        showAddUnitDialog = false
+                        newUnitName = ""
+                    }) {
+                        Text("Cancelar")
+                    }
+                },
+                title = { Text("Nueva Unidad de Dosis") },
+                text = {
+                    OutlinedTextField(
+                        value = newUnitName,
+                        onValueChange = { newUnitName = it },
+                        label = { Text("Nombre de la unidad") },
+                        singleLine = true
+                    )
+                }
+            )
         }
 
         // Time selection button
         Button(onClick = { showTimePicker = true }) {
             Text(
-                if (hourSelected != null && minuteSelected != null) {
-                    "Hora seleccionada: ${String.format("%02d:%02d", hourSelected, minuteSelected)}"
-                } else {
-                    "Seleccionar hora de toma"
-                }
+                selectedTime.value?.let { "Hora: ${it}" } ?: "Seleccionar hora de toma"
             )
         }
 
@@ -179,12 +237,19 @@ fun AddMedicationScreen() {
             Dialog(onDismissRequest = { showTimePicker = false }) {
                 TimeInputStyled(
                     timePickerState = timePickerState,
+//                    onConfirm = {
+//                        hourSelected = timePickerState.hour
+//                        minuteSelected = timePickerState.minute
+//                        selectedTime.value = LocalTime.of(hourSelected, minuteSelected)
+//                        showTimePicker = false
+//                    },
                     onConfirm = {
-                        hourSelected = timePickerState.hour
-                        minuteSelected = timePickerState.minute
+                        val hour = timePickerState.hour
+                        val minute = timePickerState.minute
+                        selectedTime.value = LocalTime.of(hour, minute)
                         showTimePicker = false
                     },
-                    onDismiss = { showTimePicker = false }
+                            onDismiss = { showTimePicker = false }
                 )
             }
         }
@@ -192,23 +257,27 @@ fun AddMedicationScreen() {
         // Save button
         Button(
             onClick = {
-                user?.let {
+                user?.let { user ->
                     selectedUnit?.let { unit ->
-                        val med = Medication(
-                            medicationID = 0,
-                            userID = it.userID,
-                            name = name,
-                            dosage = dosis,
-                            dosageUnitID = unit.dosageUnitID
-                        )
-                        medVM.addMedication(med)
+                        selectedTime.value?.let { time ->
+                            val med = Medication(
+                                medicationID = 0,
+                                userID = user.userID,
+                                name = name,
+                                dosage = dosis,
+                                dosageUnitID = unit.dosageUnitID
+                            )
+                            medVM.addMedicationWithSchedule(med, time, scheduleVM)
+                        }
                     }
                 }
             },
-            enabled = name.isNotBlank() && dosis.isNotBlank() && selectedUnit != null
+            enabled = name.isNotBlank() && dosis.isNotBlank() && selectedUnit != null && selectedTime.value != null
         ) {
             Text("Guardar")
         }
+
+
     }
 }
 

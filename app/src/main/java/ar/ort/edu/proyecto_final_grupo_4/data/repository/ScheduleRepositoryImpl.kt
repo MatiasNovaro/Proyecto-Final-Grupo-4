@@ -10,7 +10,7 @@ class ScheduleRepositoryImpl @Inject constructor(
 ) : ScheduleRepository {
 
     override suspend fun insertSchedule(schedule: Schedule) {
-        require(schedule.medicationID > 0) { "Debe haber un medicamento asignado al horario." }
+        require(schedule.medicationID >= 0) { "Debe haber un medicamento asignado al horario." }
 
         val existing = scheduleDao.getSchedulesForMedication(schedule.medicationID)
         val duplicate = existing.any { it.time == schedule.time }
@@ -19,7 +19,7 @@ class ScheduleRepositoryImpl @Inject constructor(
         scheduleDao.insertSchedule(schedule)
     }
 
-    override suspend fun getSchedulesForMedication(medicationId: Int): List<Schedule> {
+    override suspend fun getSchedulesForMedication(medicationId: Long): List<Schedule> {
         return scheduleDao.getSchedulesForMedication(medicationId)
     }
 

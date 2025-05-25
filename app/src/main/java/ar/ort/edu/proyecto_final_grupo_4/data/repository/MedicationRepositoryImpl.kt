@@ -9,7 +9,7 @@ class MedicationRepositoryImpl @Inject constructor(
     private val medicationDao: MedicationDao
 ) : MedicationRepository {
 
-    override suspend fun insertMedication(medication: Medication) {
+    override suspend fun insertMedication(medication: Medication): Long {
         // Validar que el nombre del medicamento no esté vacío
         require(medication.name.isNotBlank()) { "El nombre del medicamento no puede estar vacío." }
 
@@ -20,11 +20,11 @@ class MedicationRepositoryImpl @Inject constructor(
         require(medication.userID > 0) { "Debe haber un usuario asignado al medicamento." }
 
         // Validar que no haya medicamentos duplicados (si es necesario)
-        val existingMedication = medicationDao.getMedicationsByUser(medication.userID)
-            .any { it.name == medication.name }
-        require(!existingMedication) { "El medicamento ya está registrado para este usuario." }
+//        val existingMedication = medicationDao.getMedicationsByUser(medication.userID)
+//            .any { it.name == medication.name }
+//        require(!existingMedication) { "El medicamento ya está registrado para este usuario." }
 
-        medicationDao.insertMedication(medication)
+        return medicationDao.insertMedication(medication)
     }
 
     override suspend fun getMedicationsByUser(userId: Int): List<Medication> {

@@ -4,12 +4,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import ar.ort.edu.proyecto_final_grupo_4.domain.model.DosageUnit
 import ar.ort.edu.proyecto_final_grupo_4.domain.model.Medication
+import ar.ort.edu.proyecto_final_grupo_4.domain.model.Schedule
 import ar.ort.edu.proyecto_final_grupo_4.domain.repository.DosageUnitRepository
 import ar.ort.edu.proyecto_final_grupo_4.domain.repository.MedicationRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import java.time.LocalTime
 import javax.inject.Inject
 
 @HiltViewModel
@@ -32,9 +34,30 @@ class MedicationViewModel @Inject constructor(
 
     fun addMedication(medication: Medication) {
         viewModelScope.launch {
-            medicationRepository.insertMedication(medication)
+             medicationRepository.insertMedication(medication)
+            loadMedications(medication.userID)
+
+        }
+    }
+    fun addMedicationWithSchedule(
+        medication: Medication,
+        time: LocalTime,
+        scheduleViewModel: ScheduleViewModel
+    ) {
+        viewModelScope.launch {
+            val medicationId = insertMedicationAndReturnId(medication)
+            val schedule = Schedule(
+                scheduleID = 0,
+                medicationID = medicationId,
+                time = time
+            )
+            scheduleViewModel.addSchedule(schedule)
             loadMedications(medication.userID)
         }
+    }
+
+    suspend fun insertMedicationAndReturnId(medication: Medication): Long {
+        return medicationRepository.insertMedication(medication)
     }
 
     fun deleteMedication(medication: Medication) {

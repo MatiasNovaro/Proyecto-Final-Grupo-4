@@ -16,7 +16,8 @@ import java.time.LocalTime
     ]
 )
 data class Schedule(
-    @PrimaryKey val scheduleID: Int,
-    val medicationID: Int,
+    @PrimaryKey(autoGenerate = true)
+    val scheduleID: Int = 0,
+    val medicationID: Long,
     val time: LocalTime // puede ser LocalTime si usás TypeConverter
 )

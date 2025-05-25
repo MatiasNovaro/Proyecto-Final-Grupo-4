@@ -10,7 +10,7 @@ import ar.ort.edu.proyecto_final_grupo_4.domain.model.Medication
 @Dao
 interface MedicationDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertMedication(medication: Medication)
+    suspend fun insertMedication(medication: Medication): Long
 
     @Query("SELECT * FROM medication WHERE userID = :userId")
     suspend fun getMedicationsByUser(userId: Int): List<Medication>
