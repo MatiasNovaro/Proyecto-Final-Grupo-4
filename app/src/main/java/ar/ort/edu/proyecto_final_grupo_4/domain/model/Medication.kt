@@ -25,5 +25,6 @@ data class Medication(
     @PrimaryKey val medicationID: Int,
     val name: String,
     val userID: Int,
-    val dosageUnitID: Int
+    val dosageUnitID: Int,
+    val dosage: String
 )

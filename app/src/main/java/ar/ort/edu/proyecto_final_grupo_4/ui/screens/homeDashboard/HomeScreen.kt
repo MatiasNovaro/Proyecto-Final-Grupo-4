@@ -11,12 +11,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import ar.ort.edu.proyecto_final_grupo_4.ui.components.CustomButton
@@ -24,9 +28,16 @@ import ar.ort.edu.proyecto_final_grupo_4.ui.components.DailyMedicineCard
 import ar.ort.edu.proyecto_final_grupo_4.ui.screens.Screens
 import ar.ort.edu.proyecto_final_grupo_4.ui.theme.LightCream
 import ar.ort.edu.proyecto_final_grupo_4.ui.theme.PrimaryOrange
+import ar.ort.edu.proyecto_final_grupo_4.viewmodel.UserViewModel
 
 @Composable
 fun HomeScreen(navController: NavController){
+    val userViewModel: UserViewModel = hiltViewModel()
+    val user by userViewModel.user.collectAsState()
+
+    LaunchedEffect(Unit) {
+       userViewModel.ensureDefaultUser()
+    }
     Column(
         modifier = Modifier
             .fillMaxSize()

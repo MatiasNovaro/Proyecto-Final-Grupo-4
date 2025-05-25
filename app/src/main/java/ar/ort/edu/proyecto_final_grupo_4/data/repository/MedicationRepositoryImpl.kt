@@ -13,6 +13,9 @@ class MedicationRepositoryImpl @Inject constructor(
         // Validar que el nombre del medicamento no esté vacío
         require(medication.name.isNotBlank()) { "El nombre del medicamento no puede estar vacío." }
 
+        // Validar que la dosis no esté vacía
+        require(medication.dosage.isNotBlank()) { "La dosis no puede estar vacía." }
+
         // Validar que el userID sea válido
         require(medication.userID > 0) { "Debe haber un usuario asignado al medicamento." }
 
