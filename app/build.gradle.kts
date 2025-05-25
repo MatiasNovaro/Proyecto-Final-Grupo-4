@@ -56,6 +56,7 @@ dependencies {
     implementation(libs.androidx.adapters)
     val nav_version = "2.9.0"
     implementation("androidx.navigation:navigation-compose:$nav_version")
+    implementation("androidx.hilt:hilt-navigation-compose:1.0.0")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

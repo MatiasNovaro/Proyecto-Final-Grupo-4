@@ -31,6 +31,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.TimePickerDefaults
+import androidx.compose.material3.TimePickerState
 import androidx.compose.ui.graphics.Color.Companion.Black
 import ar.ort.edu.proyecto_final_grupo_4.ui.theme.PrimaryOrange
 import ar.ort.edu.proyecto_final_grupo_4.ui.theme.ProyectoFinalGrupo4Theme
@@ -38,19 +39,11 @@ import ar.ort.edu.proyecto_final_grupo_4.ui.theme.White
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-
 fun TimeInputStyled(
+    timePickerState: TimePickerState, // Accept timePickerState as parameter
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-
-    val currentTime = Calendar.getInstance()
-    val timePickerState = rememberTimePickerState(
-        initialHour = currentTime.get(Calendar.HOUR_OF_DAY),
-        initialMinute = currentTime.get(Calendar.MINUTE),
-        is24Hour = false,
-    )
-
     Surface(
         modifier = Modifier
             .padding(16.dp)
@@ -71,7 +64,7 @@ fun TimeInputStyled(
                 color = MaterialTheme.colorScheme.onSurface
             )
 
-            // Selector de tiempo
+            // Time selector
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -85,7 +78,7 @@ fun TimeInputStyled(
                         timeSelectorUnselectedContainerColor = White,
                         timeSelectorSelectedContentColor = White,
                         timeSelectorUnselectedContentColor = Black,
-                        selectorColor = PrimaryOrange, // Para el borde general del selector
+                        selectorColor = PrimaryOrange,
                         containerColor = White,
                         periodSelectorSelectedContainerColor = PrimaryOrange,
                         periodSelectorUnselectedContainerColor = White,
@@ -95,7 +88,7 @@ fun TimeInputStyled(
                 )
             }
 
-            // Renglón inferior
+            // Bottom row with buttons
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
