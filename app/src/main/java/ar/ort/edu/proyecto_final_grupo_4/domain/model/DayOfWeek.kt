@@ -2,7 +2,6 @@ package ar.ort.edu.proyecto_final_grupo_4.domain.model
 
 import androidx.room.Entity
 import androidx.room.ForeignKey
-import androidx.room.PrimaryKey
 
 @Entity(
     tableName = "day_of_week",
@@ -17,7 +16,6 @@ import androidx.room.PrimaryKey
     ]
 )
 data class DayOfWeek(
-    val scheduleID: Int = 0,
+    val scheduleID: Long = 0,
     val dayOfWeek: Int // 0 = Sunday, 6 = Saturday
 )
-

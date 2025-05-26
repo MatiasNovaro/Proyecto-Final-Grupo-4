@@ -25,7 +25,9 @@ import ar.ort.edu.proyecto_final_grupo_4.domain.model.Schedule
 import ar.ort.edu.proyecto_final_grupo_4.viewmodel.MedicationViewModel
 import ar.ort.edu.proyecto_final_grupo_4.viewmodel.UserViewModel
 import ar.ort.edu.proyecto_final_grupo_4.domain.model.DosageUnit
+import ar.ort.edu.proyecto_final_grupo_4.domain.utils.FrequencyOption
 import ar.ort.edu.proyecto_final_grupo_4.viewmodel.ScheduleViewModel
+import ar.ort.edu.proyecto_final_grupo_4.ui.components.FrequencySelector
 import java.time.LocalTime
 import java.util.Calendar
 import kotlinx.coroutines.CoroutineScope
@@ -46,6 +48,8 @@ fun AddMedicationScreen() {
     var name by remember { mutableStateOf("") }
     var dosis by remember { mutableStateOf("") }
     var frecuencia by remember { mutableStateOf("Diariamente") }
+    var selectedFrequency by remember { mutableStateOf<FrequencyOption?>(null) }
+    var selectedWeekDays by remember { mutableStateOf<List<Int>>(emptyList()) }
     var selectedUnit by remember { mutableStateOf<DosageUnit?>(null) }
     var selectedTime by remember { mutableStateOf<LocalTime?>(null) }
 
@@ -71,9 +75,11 @@ fun AddMedicationScreen() {
             onDosisChange = { dosis = it }
         )
 
-        FrequencyDropdown(
-            selectedFrequency = frecuencia,
-            onFrequencySelected = { frecuencia = it }
+        FrequencySelector(
+            selectedFrequency = selectedFrequency,
+            onFrequencySelected = { selectedFrequency = it },
+            selectedWeekDays = selectedWeekDays,
+            onWeekDaysSelected = { selectedWeekDays = it }
         )
 
         DosageUnitDropdown(
@@ -94,19 +100,28 @@ fun AddMedicationScreen() {
         )
 
         SaveButton(
-            enabled = name.isNotBlank() && dosis.isNotBlank() && selectedUnit != null && selectedTime != null,
+            enabled = name.isNotBlank() && dosis.isNotBlank() && selectedUnit != null &&
+                    selectedTime != null && selectedFrequency != null,
             onClick = {
                 user?.let { user ->
                     selectedUnit?.let { unit ->
                         selectedTime?.let { time ->
-                            val med = Medication(
-                                medicationID = 0,
-                                userID = user.userID,
-                                name = name,
-                                dosage = dosis,
-                                dosageUnitID = unit.dosageUnitID
-                            )
-                            medVM.addMedicationWithSchedule(med, time, scheduleVM)
+                            selectedFrequency?.let { frequency ->
+                                val med = Medication(
+                                    medicationID = 0,
+                                    userID = user.userID,
+                                    name = name,
+                                    dosage = dosis,
+                                    dosageUnitID = unit.dosageUnitID
+                                )
+                                medVM.addMedicationWithScheduleAndFrequency(
+                                    medication = med,
+                                    frequency = frequency,
+                                    startTime = time,
+                                    selectedWeekDays = selectedWeekDays,
+                                    scheduleVM = scheduleVM
+                                )
+                            }
                         }
                     }
                 }

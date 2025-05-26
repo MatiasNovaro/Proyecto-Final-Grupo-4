@@ -12,8 +12,8 @@ interface DayOfWeekDao {
     suspend fun insertDayOfWeek(day: DayOfWeek)
 
     @Query("SELECT * FROM day_of_week WHERE scheduleID = :scheduleId")
-    suspend fun getDaysForSchedule(scheduleId: Int): List<DayOfWeek>
+    suspend fun getDaysForSchedule(scheduleId: Long): List<DayOfWeek>
 
     @Query("DELETE FROM day_of_week WHERE scheduleID = :scheduleId")
-    suspend fun deleteDaysForSchedule(scheduleId: Int)
+    suspend fun deleteDaysForSchedule(scheduleId: Long)
 }

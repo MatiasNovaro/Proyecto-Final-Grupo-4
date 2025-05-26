@@ -10,14 +10,14 @@ import ar.ort.edu.proyecto_final_grupo_4.domain.model.Schedule
 @Dao
 interface ScheduleDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertSchedule(schedule: Schedule)
+    suspend fun insertSchedule(schedule: Schedule): Long
 
     @Query("SELECT * FROM schedule WHERE medicationID = :medicationId")
     suspend fun getSchedulesForMedication(medicationId: Long): List<Schedule>
 
     @Query("SELECT * FROM schedule WHERE scheduleID = :id")
-    suspend fun getById(id: Int): Schedule?
+    suspend fun getById(id: Long): Schedule?
 
-    @Delete
-    suspend fun deleteSchedule(schedule: Schedule)
+    @Query("DELETE FROM schedule WHERE scheduleID = :id")
+    suspend fun deleteSchedule(id: Long)
 }
