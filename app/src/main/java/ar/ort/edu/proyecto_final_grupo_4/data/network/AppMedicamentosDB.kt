@@ -17,7 +17,7 @@ import ar.ort.edu.proyecto_final_grupo_4.domain.model.*
 
 
 @Database(
-    version = 2,
+    version = 3,
     exportSchema = false,
     entities = [
         User::class,

@@ -26,6 +26,6 @@ data class Medication(
     val medicationID: Long = 0,
     val name: String,
     val userID: Int,
-    val dosageUnitID: Int,
+    val dosageUnitID: Long,
     val dosage: String
 )

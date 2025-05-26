@@ -21,11 +21,11 @@ class DayOfWeekRepositoryImpl @Inject constructor(
         dayOfWeekDao.insertDayOfWeek(day)
     }
 
-    override suspend fun getDaysForSchedule(scheduleId: Int): List<DayOfWeek> {
+    override suspend fun getDaysForSchedule(scheduleId: Long): List<DayOfWeek> {
         return dayOfWeekDao.getDaysForSchedule(scheduleId)
     }
 
-    override suspend fun deleteDaysForSchedule(scheduleId: Int) {
+    override suspend fun deleteDaysForSchedule(scheduleId: Long) {
         dayOfWeekDao.deleteDaysForSchedule(scheduleId)
     }
 }

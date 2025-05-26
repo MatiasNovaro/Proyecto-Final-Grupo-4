@@ -9,11 +9,11 @@ import ar.ort.edu.proyecto_final_grupo_4.domain.model.DosageUnit
 @Dao
 interface DosageUnitDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertUnit(unit: DosageUnit)
+    suspend fun insertUnit(unit: DosageUnit) :Long
 
     @Query("SELECT * FROM dosage_unit")
     suspend fun getAllUnits(): List<DosageUnit>
 
     @Query("SELECT * FROM dosage_unit WHERE dosageUnitID = :id")
-    suspend fun getById(id: Int): DosageUnit?
+    suspend fun getById(id: Long): DosageUnit?
 }
