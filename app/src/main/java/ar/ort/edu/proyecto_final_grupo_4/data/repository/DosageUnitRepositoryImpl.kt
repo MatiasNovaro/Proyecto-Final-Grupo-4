@@ -9,7 +9,7 @@ class DosageUnitRepositoryImpl @Inject constructor(
     private val dosageUnitDao: DosageUnitDao
 ) : DosageUnitRepository {
 
-    override suspend fun insertUnit(unit: DosageUnit) {
+    override suspend fun insertUnit(unit: DosageUnit) :Long {
         // Validar que el nombre de la unidad no esté vacío
         require(unit.name.isNotBlank()) { "El nombre de la unidad de dosificación no puede estar vacío." }
 
@@ -17,14 +17,15 @@ class DosageUnitRepositoryImpl @Inject constructor(
         val existingUnit = dosageUnitDao.getAllUnits().any { it.name == unit.name }
         require(!existingUnit) { "Ya existe una unidad con ese nombre." }
 
-        dosageUnitDao.insertUnit(unit)
+
+        return dosageUnitDao.insertUnit(unit)
     }
 
     override suspend fun getAllUnits(): List<DosageUnit> {
         return dosageUnitDao.getAllUnits()
     }
 
-    override suspend fun getById(id: Int): DosageUnit? {
+    override suspend fun getById(id: Long): DosageUnit? {
         return dosageUnitDao.getById(id)
     }
 }

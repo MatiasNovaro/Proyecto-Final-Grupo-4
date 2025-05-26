@@ -41,30 +41,13 @@ fun AddMedicationScreen() {
     val scheduleVM: ScheduleViewModel = hiltViewModel()
 
     val user by userVM.user.collectAsState()
+    val units by medVM.dosageUnits.collectAsState()
 
     var name by remember { mutableStateOf("") }
     var dosis by remember { mutableStateOf("") }
     var frecuencia by remember { mutableStateOf("Diariamente") }
-    var expanded by remember { mutableStateOf(false) }
-    val frecuencias = listOf("Diariamente", "Cada 8 horas", "Semanalmente")
     var selectedUnit by remember { mutableStateOf<DosageUnit?>(null) }
-    var expandedUnits by remember { mutableStateOf(false) }
-    val units by medVM.dosageUnits.collectAsState()
-    var showTimePicker by remember { mutableStateOf(false) }
-    var hourSelected by remember { mutableStateOf<Int?>(null) }
-    var minuteSelected by remember { mutableStateOf<Int?>(null) }
-    var showAddUnitDialog by remember { mutableStateOf(false) }
-    var newUnitName by remember { mutableStateOf("") }
-    // Create timePickerState at the screen level
-    val currentTime = Calendar.getInstance()
-    val timePickerState = rememberTimePickerState(
-        initialHour = currentTime.get(Calendar.HOUR_OF_DAY),
-        initialMinute = currentTime.get(Calendar.MINUTE),
-        is24Hour = false,
-    )
-    val selectedTime = remember {
-        mutableStateOf<LocalTime?>(null)
-    }
+    var selectedTime by remember { mutableStateOf<LocalTime?>(null) }
 
     LaunchedEffect(Unit) {
         userVM.ensureDefaultUser()
@@ -79,187 +62,43 @@ fun AddMedicationScreen() {
         verticalArrangement = Arrangement.spacedBy(12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(
-            "Agregar",
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Bold
-        )
-        Text(
-            "Medicamento",
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Bold
+        MedicationScreenHeader()
+
+        MedicationBasicFields(
+            name = name,
+            onNameChange = { name = it },
+            dosis = dosis,
+            onDosisChange = { dosis = it }
         )
 
-        OutlinedTextField(
-            value = name,
-            onValueChange = { name = it },
-            label = { Text("Nombre") },
-            placeholder = { Text("Ej. Paracetamol") },
-            modifier = Modifier.fillMaxWidth()
+        FrequencyDropdown(
+            selectedFrequency = frecuencia,
+            onFrequencySelected = { frecuencia = it }
         )
 
-        OutlinedTextField(
-            value = dosis,
-            onValueChange = { dosis = it },
-            label = { Text("Dosis") },
-            placeholder = { Text("Ej. 500 mg") },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        // Frequency dropdown
-        Box {
-            OutlinedTextField(
-                value = frecuencia,
-                onValueChange = {},
-                label = { Text("Frecuencia") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { expanded = true },
-                readOnly = true,
-                trailingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.ArrowDropDown,
-                        contentDescription = "Desplegar",
-                        modifier = Modifier.clickable { expanded = true }
-                    )
-                }
-            )
-            DropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false }
-            ) {
-                frecuencias.forEach { option ->
-                    DropdownMenuItem(
-                        text = { Text(option) },
-                        onClick = {
-                            frecuencia = option
-                            expanded = false
-                        }
-                    )
+        DosageUnitDropdown(
+            units = units,
+            selectedUnit = selectedUnit,
+            onUnitSelected = { selectedUnit = it },
+            onUnitAdded = { newUnit ->
+                // Fix Issue 1: Wait for the unit to be saved and get the actual ID
+                medVM.addDosageUnit(newUnit) { savedUnit ->
+                    selectedUnit = savedUnit
                 }
             }
-        }
+        )
 
-        // Dosage unit dropdown
-        Box {
-            OutlinedTextField(
-                value = selectedUnit?.name ?: "",
-                onValueChange = {},
-                label = { Text("Unidad de Dosis") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { expandedUnits = true },
-                readOnly = true,
-                trailingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.ArrowDropDown,
-                        contentDescription = "Desplegar",
-                        modifier = Modifier.clickable { expandedUnits = true }
-                    )
-                }
-            )
+        TimeSelector(
+            selectedTime = selectedTime,
+            onTimeSelected = { selectedTime = it }
+        )
 
-            DropdownMenu(
-                expanded = expandedUnits,
-                onDismissRequest = { expandedUnits = false }
-            ) {
-                units.forEach { unit ->
-                    DropdownMenuItem(
-                        text = { Text(unit.name) },
-                        onClick = {
-                            selectedUnit = unit
-                            expandedUnits = false
-                        }
-                    )
-                }
-
-                // Divider + Opción para agregar nueva unidad
-                Divider()
-                DropdownMenuItem(
-                    text = { Text("Agregar nueva unidad...") },
-                    onClick = {
-                        expandedUnits = false
-                        showAddUnitDialog = true
-                    }
-                )
-            }
-        }
-
-// Dialog para ingresar una nueva unidad
-        if (showAddUnitDialog) {
-            AlertDialog(
-                onDismissRequest = { showAddUnitDialog = false },
-                confirmButton = {
-                    TextButton(
-                        onClick = {
-                            val trimmedName = newUnitName.trim()
-                            if (trimmedName.isNotEmpty()) {
-                                val newUnit = DosageUnit(dosageUnitID = 0, name = trimmedName)
-                                medVM.addDosageUnit(newUnit) // guarda en DB
-                                selectedUnit = newUnit // selecciona automáticamente
-                                newUnitName = ""
-                                showAddUnitDialog = false
-                            }
-                        }
-                    ) {
-                        Text("Agregar")
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = {
-                        showAddUnitDialog = false
-                        newUnitName = ""
-                    }) {
-                        Text("Cancelar")
-                    }
-                },
-                title = { Text("Nueva Unidad de Dosis") },
-                text = {
-                    OutlinedTextField(
-                        value = newUnitName,
-                        onValueChange = { newUnitName = it },
-                        label = { Text("Nombre de la unidad") },
-                        singleLine = true
-                    )
-                }
-            )
-        }
-
-        // Time selection button
-        Button(onClick = { showTimePicker = true }) {
-            Text(
-                selectedTime.value?.let { "Hora: ${it}" } ?: "Seleccionar hora de toma"
-            )
-        }
-
-        // Time picker dialog
-        if (showTimePicker) {
-            Dialog(onDismissRequest = { showTimePicker = false }) {
-                TimeInputStyled(
-                    timePickerState = timePickerState,
-//                    onConfirm = {
-//                        hourSelected = timePickerState.hour
-//                        minuteSelected = timePickerState.minute
-//                        selectedTime.value = LocalTime.of(hourSelected, minuteSelected)
-//                        showTimePicker = false
-//                    },
-                    onConfirm = {
-                        val hour = timePickerState.hour
-                        val minute = timePickerState.minute
-                        selectedTime.value = LocalTime.of(hour, minute)
-                        showTimePicker = false
-                    },
-                            onDismiss = { showTimePicker = false }
-                )
-            }
-        }
-
-        // Save button
-        Button(
+        SaveButton(
+            enabled = name.isNotBlank() && dosis.isNotBlank() && selectedUnit != null && selectedTime != null,
             onClick = {
                 user?.let { user ->
                     selectedUnit?.let { unit ->
-                        selectedTime.value?.let { time ->
+                        selectedTime?.let { time ->
                             val med = Medication(
                                 medicationID = 0,
                                 userID = user.userID,
@@ -271,16 +110,248 @@ fun AddMedicationScreen() {
                         }
                     }
                 }
-            },
-            enabled = name.isNotBlank() && dosis.isNotBlank() && selectedUnit != null && selectedTime.value != null
-        ) {
-            Text("Guardar")
-        }
-
-
+            }
+        )
     }
 }
 
+@Composable
+private fun MedicationScreenHeader() {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            "Agregar",
+            fontSize = 28.sp,
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            "Medicamento",
+            fontSize = 28.sp,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+@Composable
+private fun MedicationBasicFields(
+    name: String,
+    onNameChange: (String) -> Unit,
+    dosis: String,
+    onDosisChange: (String) -> Unit
+) {
+    OutlinedTextField(
+        value = name,
+        onValueChange = onNameChange,
+        label = { Text("Nombre") },
+        placeholder = { Text("Ej. Paracetamol") },
+        modifier = Modifier.fillMaxWidth()
+    )
+
+    OutlinedTextField(
+        value = dosis,
+        onValueChange = onDosisChange,
+        label = { Text("Dosis") },
+        placeholder = { Text("Ej. 500 mg") },
+        modifier = Modifier.fillMaxWidth()
+    )
+}
+
+@Composable
+private fun FrequencyDropdown(
+    selectedFrequency: String,
+    onFrequencySelected: (String) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val frecuencias = listOf("Diariamente", "Cada 8 horas", "Semanalmente")
+
+    Box {
+        OutlinedTextField(
+            value = selectedFrequency,
+            onValueChange = {},
+            label = { Text("Frecuencia") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { expanded = true },
+            readOnly = true,
+            trailingIcon = {
+                Icon(
+                    imageVector = Icons.Default.ArrowDropDown,
+                    contentDescription = "Desplegar",
+                    modifier = Modifier.clickable { expanded = true }
+                )
+            }
+        )
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            frecuencias.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(option) },
+                    onClick = {
+                        onFrequencySelected(option)
+                        expanded = false
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DosageUnitDropdown(
+    units: List<DosageUnit>,
+    selectedUnit: DosageUnit?,
+    onUnitSelected: (DosageUnit) -> Unit,
+    onUnitAdded: (DosageUnit) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    var showAddUnitDialog by remember { mutableStateOf(false) }
+
+    Box {
+        OutlinedTextField(
+            value = selectedUnit?.name ?: "",
+            onValueChange = {},
+            label = { Text("Unidad de Dosis") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { expanded = true },
+            readOnly = true,
+            trailingIcon = {
+                Icon(
+                    imageVector = Icons.Default.ArrowDropDown,
+                    contentDescription = "Desplegar",
+                    modifier = Modifier.clickable { expanded = true }
+                )
+            }
+        )
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            units.forEach { unit ->
+                DropdownMenuItem(
+                    text = { Text(unit.name) },
+                    onClick = {
+                        onUnitSelected(unit)
+                        expanded = false
+                    }
+                )
+            }
+
+            Divider()
+            DropdownMenuItem(
+                text = { Text("Agregar nueva unidad...") },
+                onClick = {
+                    expanded = false
+                    showAddUnitDialog = true
+                }
+            )
+        }
+    }
+
+    if (showAddUnitDialog) {
+        AddUnitDialog(
+            onDismiss = { showAddUnitDialog = false },
+            onUnitAdded = { unit ->
+                onUnitAdded(unit)
+                showAddUnitDialog = false
+            }
+        )
+    }
+}
+
+@Composable
+private fun AddUnitDialog(
+    onDismiss: () -> Unit,
+    onUnitAdded: (DosageUnit) -> Unit
+) {
+    var newUnitName by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    val trimmedName = newUnitName.trim()
+                    if (trimmedName.isNotEmpty()) {
+                        val newUnit = DosageUnit(dosageUnitID = 0, name = trimmedName)
+                        onUnitAdded(newUnit)
+                        newUnitName = ""
+                    }
+                }
+            ) {
+                Text("Agregar")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = {
+                onDismiss()
+                newUnitName = ""
+            }) {
+                Text("Cancelar")
+            }
+        },
+        title = { Text("Nueva Unidad de Dosis") },
+        text = {
+            OutlinedTextField(
+                value = newUnitName,
+                onValueChange = { newUnitName = it },
+                label = { Text("Nombre de la unidad") },
+                singleLine = true
+            )
+        }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun TimeSelector(
+    selectedTime: LocalTime?,
+    onTimeSelected: (LocalTime) -> Unit
+) {
+    var showTimePicker by remember { mutableStateOf(false) }
+    val currentTime = Calendar.getInstance()
+    val timePickerState = rememberTimePickerState(
+        initialHour = currentTime.get(Calendar.HOUR_OF_DAY),
+        initialMinute = currentTime.get(Calendar.MINUTE),
+        is24Hour = false,
+    )
+
+    Button(onClick = { showTimePicker = true }) {
+        Text(
+            selectedTime?.let { "Hora: $it" } ?: "Seleccionar hora de toma"
+        )
+    }
+
+    if (showTimePicker) {
+        Dialog(onDismissRequest = { showTimePicker = false }) {
+            TimeInputStyled(
+                timePickerState = timePickerState,
+                onConfirm = {
+                    val hour = timePickerState.hour
+                    val minute = timePickerState.minute
+                    onTimeSelected(LocalTime.of(hour, minute))
+                    showTimePicker = false
+                },
+                onDismiss = { showTimePicker = false }
+            )
+        }
+    }
+}
+
+@Composable
+private fun SaveButton(
+    enabled: Boolean,
+    onClick: () -> Unit
+) {
+    Button(
+        onClick = onClick,
+        enabled = enabled
+    ) {
+        Text("Guardar")
+    }
+}
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable

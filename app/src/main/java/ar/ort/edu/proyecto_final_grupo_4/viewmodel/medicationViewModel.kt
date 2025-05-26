@@ -1,5 +1,6 @@
 package ar.ort.edu.proyecto_final_grupo_4.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import ar.ort.edu.proyecto_final_grupo_4.domain.model.DosageUnit
@@ -75,8 +76,31 @@ class MedicationViewModel @Inject constructor(
 
     fun addDosageUnit(unit: DosageUnit) {
         viewModelScope.launch {
-            dosageUnitRepository.insertUnit(unit)
-            loadDosageUnits()
+            try {
+                val savedUnitId = dosageUnitRepository.insertUnit(unit)
+                val savedUnit = unit.copy(dosageUnitID = savedUnitId)
+                _dosageUnits.value += savedUnit
+            } catch (e: Exception) {
+                Log.e("MedicationViewModel", "Error adding dosage unit", e)
+            }
+        }
+    }
+
+    fun addDosageUnit(unit: DosageUnit, onSaved: (DosageUnit) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val savedUnitId = dosageUnitRepository.insertUnit(unit)
+                val savedUnit = unit.copy(dosageUnitID = savedUnitId)
+
+                // Update your local state
+                _dosageUnits.value += savedUnit
+
+                // Call the callback with the saved unit
+                onSaved(savedUnit)
+            } catch (e: Exception) {
+                // Handle error appropriately
+                Log.e("MedicationViewModel", "Error adding dosage unit", e)
+            }
         }
     }
 }

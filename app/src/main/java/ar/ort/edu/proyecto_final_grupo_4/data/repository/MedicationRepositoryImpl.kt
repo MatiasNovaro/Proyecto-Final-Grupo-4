@@ -31,7 +31,7 @@ class MedicationRepositoryImpl @Inject constructor(
         return medicationDao.getMedicationsByUser(userId)
     }
 
-    override suspend fun getById(id: Int): Medication? {
+    override suspend fun getById(id: Long): Medication? {
         return medicationDao.getById(id)
     }
 
