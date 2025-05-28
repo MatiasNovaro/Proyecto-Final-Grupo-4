@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.media3.common.util.Log
+import androidx.navigation.NavController
 import ar.ort.edu.proyecto_final_grupo_4.domain.model.Medication
 import ar.ort.edu.proyecto_final_grupo_4.domain.model.Schedule
 import ar.ort.edu.proyecto_final_grupo_4.viewmodel.MedicationViewModel
@@ -37,7 +38,7 @@ import kotlinx.coroutines.launch
 @SuppressLint("DefaultLocale")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddMedicationScreen() {
+fun AddMedicationScreen(navController: NavController) {
     val userVM: UserViewModel = hiltViewModel()
     val medVM: MedicationViewModel = hiltViewModel()
     val scheduleVM: ScheduleViewModel = hiltViewModel()
@@ -380,10 +381,10 @@ private fun SaveButton(
     }
 }
 
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-fun AddMedicationScreenPreview() {
-    MaterialTheme {
-        AddMedicationScreen()
-    }
-}
+//@Preview(showBackground = true, showSystemUi = true)
+//@Composable
+//fun AddMedicationScreenPreview() {
+//    MaterialTheme {
+//        AddMedicationScreen()
+//    }
+//}

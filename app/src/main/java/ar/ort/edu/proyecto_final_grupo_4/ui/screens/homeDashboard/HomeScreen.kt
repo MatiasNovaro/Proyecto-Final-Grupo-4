@@ -53,9 +53,10 @@ fun HomeScreen(navController: NavController){
         modifier = Modifier
             .fillMaxSize()
             .background(LightCream)
-            .padding(16.dp),
+            .padding(8.dp),
         verticalArrangement = Arrangement.SpaceBetween // Para poner el botón abajo
     ) {
+        Spacer(modifier = Modifier.height(8.dp))
         Column {
             MedicationHeader()
             DailyMedicineCard(
@@ -84,17 +85,10 @@ fun MedicationHeader() {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 32.dp)
+            .padding(horizontal = 24.dp)
     ) {
         Text(
-            text = "Buen dia",
-            fontSize = 30.sp,
-            fontWeight = FontWeight.Normal,
-            color = Color.DarkGray
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "Tus medicamentos del dia de hoy:",
+            text = "Tus medicamentos del día de hoy:",
             fontSize = 30.sp,
             fontWeight = FontWeight.Bold,
             color = Color.Black

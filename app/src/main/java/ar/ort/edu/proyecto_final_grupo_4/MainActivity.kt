@@ -4,17 +4,24 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavHost
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import ar.ort.edu.proyecto_final_grupo_4.ui.components.BottomNavigationBar
+import ar.ort.edu.proyecto_final_grupo_4.ui.components.CustomTopBar
 import ar.ort.edu.proyecto_final_grupo_4.ui.screens.Screens
 import ar.ort.edu.proyecto_final_grupo_4.ui.screens.addMedication.AddMedicationScreen
 import ar.ort.edu.proyecto_final_grupo_4.ui.screens.homeDashboard.HomeScreen
@@ -30,17 +37,29 @@ class MainActivity : ComponentActivity() {
             ProyectoFinalGrupo4Theme {
 
                 val navController = rememberNavController()
-
-                Scaffold(modifier = Modifier.fillMaxSize()) {
+                val currentTitle = remember { mutableStateOf("Home") }
+                Scaffold(modifier = Modifier.fillMaxSize(),
+                    topBar = {
+                        CustomTopBar(
+                            title = currentTitle.value,
+                        )
+                    },
+                    bottomBar = {
+                        BottomNavigationBar(navController = navController)
+                    }
+                ) {
                     innerPadding ->
-
-                    NavHost(
-                        modifier= Modifier.padding(innerPadding),
-                        navController=navController,
-                        startDestination= Screens.Home.screen
-                    ){
-                        composable(Screens.Home.screen){ HomeScreen(navController)}
-                        composable(Screens.AddMedication.screen){ AddMedicationScreen()}
+                    Column(
+                        modifier = Modifier
+                            .padding(innerPadding)
+                            .fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        //verticalArrangement = Arrangement.Center
+                    ) {
+                        Navigation(
+                            onDestinationChanged = { title -> currentTitle.value = title },
+                            navController = navController
+                        )
                     }
                 }
             }
