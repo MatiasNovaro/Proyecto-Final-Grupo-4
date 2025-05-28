@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -30,6 +31,10 @@ import ar.ort.edu.proyecto_final_grupo_4.ui.screens.Screens
 import ar.ort.edu.proyecto_final_grupo_4.ui.theme.LightCream
 import ar.ort.edu.proyecto_final_grupo_4.ui.theme.PrimaryOrange
 import ar.ort.edu.proyecto_final_grupo_4.viewmodel.UserViewModel
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.ui.unit.min
+import ar.ort.edu.proyecto_final_grupo_4.viewmodel.ScheduleViewModel
 
 @SuppressLint("SuspiciousIndentation")
 @Composable
@@ -39,8 +44,11 @@ fun HomeScreen(navController: NavController){
         userViewModel.ensureDefaultUser()
     }
   val user by userViewModel.user.collectAsState()
-
-
+    val scheduleViewModel: ScheduleViewModel = hiltViewModel()
+    val todaySchedules by scheduleViewModel.todaySchedules.collectAsState()
+    LaunchedEffect(Unit) {
+        scheduleViewModel.loadTodaySchedules()
+    }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -50,11 +58,17 @@ fun HomeScreen(navController: NavController){
     ) {
         Column {
             MedicationHeader()
-            DailyMedicineCard()
+            DailyMedicineCard(
+                todaySchedules,
+                dayTitle = "Hoy",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight(0.75f) // 50% de la altura disponible
+            )
         }
 
         CustomButton(
-            text = "Confirmar Toma",
+            text = "Agregar medicamento",
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 16.dp),
@@ -73,15 +87,15 @@ fun MedicationHeader() {
             .padding(horizontal = 24.dp, vertical = 32.dp)
     ) {
         Text(
-            text = "Próxima\nmedicación en:",
+            text = "Buen dia",
             fontSize = 30.sp,
             fontWeight = FontWeight.Normal,
             color = Color.DarkGray
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "2h 30min",
-            fontSize = 56.sp,
+            text = "Tus medicamentos del dia de hoy:",
+            fontSize = 30.sp,
             fontWeight = FontWeight.Bold,
             color = Color.Black
         )

@@ -10,6 +10,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import ar.ort.edu.proyecto_final_grupo_4.viewmodel.ScheduleWithDetails
+import java.time.format.DateTimeFormatter
 
 data class CustomHorizontalCard(
     val time: String,
@@ -20,12 +24,10 @@ data class CustomHorizontalCard(
 
 @Composable
 fun DailyMedicineCard(
-    medicines: List<CustomHorizontalCard> = listOf(
-        CustomHorizontalCard("10:30", "Paracetamol", "1 Gramo", MedicineStatus.WARNING),
-        CustomHorizontalCard("10:30", "Paracetamol", "1 Gramo", MedicineStatus.SUCCESS)
-    ),
+    medicines: List<ScheduleWithDetails>,
     dayTitle: String = "Hoy",
-    modifier: Modifier = Modifier
+    modifier: Modifier,
+
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -40,7 +42,6 @@ fun DailyMedicineCard(
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
-
             Text(
                 text = dayTitle,
                 fontSize = 16.sp,
@@ -55,29 +56,42 @@ fun DailyMedicineCard(
                 color = Color.Black
             )
 
+            // Ajuste para permitir scroll en una altura máxima para 3 elementos
+            val maxVisibleItems = 3
+            val itemHeight = 85.dp // Ajustá esto según tu diseño real
+            val maxHeight = itemHeight * maxVisibleItems
 
-            Column(
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = maxHeight) // Máximo espacio visible
             ) {
-                medicines.forEach { medicine ->
-                    MedicineCard(
-                        time = medicine.time,
-                        name = medicine.name,
-                        dosage = medicine.dosage,
-                        status = medicine.status
-                    )
+                items(medicines) { medicine ->
+                    var status  = MedicineStatus.SUCCESS
+                    if(!medicine.isCompletedToday) status = MedicineStatus.WARNING
+                    val timeFormatted = medicine.nextDose?.toLocalTime()?.format(DateTimeFormatter.ofPattern("HH:mm"))
+                    if (timeFormatted != null) {
+                        MedicineCard(
+                            time = timeFormatted,
+                            name = medicine.medication.name,
+                            dosage = "${medicine.medication.dosage} ${medicine.dosageUnit.name}",
+                            status = status
+                        )
+                    }
                 }
             }
         }
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun DailyMedicineCardPreview() {
-    MaterialTheme {
-        DailyMedicineCard(
-            modifier = Modifier.padding(16.dp)
-        )
-    }
-}
+
+//@Preview(showBackground = true)
+//@Composable
+//fun DailyMedicineCardPreview() {
+//    MaterialTheme {
+//        DailyMedicineCard(
+//            modifier = Modifier.padding(16.dp)
+//        )
+//    }
+//}
