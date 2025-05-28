@@ -87,9 +87,10 @@ fun HistorialScreen(
 //            items(medicineHistory) { dayData ->
 //                DailyMedicineCard(
 //                    medicines = dayData.medicines,
-//                    dayTitle = dayData.dayTitle
+//                    dayTitle = dayData.dayTitle,
+//                    modifier = TODO(),
 //                )
-          //  }
+//            }
         }
     }
 }
