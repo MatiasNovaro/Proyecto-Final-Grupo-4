@@ -54,7 +54,7 @@ fun TimeInputStyled(
     ) {
         Column(
             modifier = Modifier
-                .padding(horizontal = 24.dp, vertical = 16.dp)
+                .padding(horizontal = 16.dp, vertical = 16.dp)
                 .fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
@@ -137,15 +137,15 @@ fun TimeInputStyled(
     }
 }
 
-/*
+@OptIn(ExperimentalMaterial3Api::class)
 @Preview(showBackground = true)
 @Composable
 fun TimeInputStyledPreview() {
     ProyectoFinalGrupo4Theme {
         TimeInputStyled(
             onConfirm = {},
-            onDismiss = {}
+            onDismiss = {},
+            timePickerState = rememberTimePickerState()
         )
     }
 }
-*/

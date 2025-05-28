@@ -19,7 +19,7 @@ import java.time.LocalTime
 )
 data class Schedule(
     @PrimaryKey(autoGenerate = true)
-    val scheduleID: Int = 0,
+    val scheduleID: Long = 0,
     val medicationID: Long,
     val frequencyType: FrequencyType,
     val intervalValue: Int? = null, // Para "cada X horas" o "cada X días" o "X veces al día"

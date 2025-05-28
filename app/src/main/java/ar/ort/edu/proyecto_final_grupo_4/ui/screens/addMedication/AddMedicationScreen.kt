@@ -53,80 +53,92 @@ fun AddMedicationScreen() {
     var selectedUnit by remember { mutableStateOf<DosageUnit?>(null) }
     var selectedTime by remember { mutableStateOf<LocalTime?>(null) }
 
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+
     LaunchedEffect(Unit) {
         userVM.ensureDefaultUser()
         medVM.loadDosageUnits()
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-            .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        MedicationScreenHeader()
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+                .padding(paddingValues)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            MedicationScreenHeader()
 
-        MedicationBasicFields(
-            name = name,
-            onNameChange = { name = it },
-            dosis = dosis,
-            onDosisChange = { dosis = it }
-        )
+            MedicationBasicFields(
+                name = name,
+                onNameChange = { name = it },
+                dosis = dosis,
+                onDosisChange = { dosis = it }
+            )
 
-        FrequencySelector(
-            selectedFrequency = selectedFrequency,
-            onFrequencySelected = { selectedFrequency = it },
-            selectedWeekDays = selectedWeekDays,
-            onWeekDaysSelected = { selectedWeekDays = it }
-        )
+            FrequencySelector(
+                selectedFrequency = selectedFrequency,
+                onFrequencySelected = { selectedFrequency = it },
+                selectedWeekDays = selectedWeekDays,
+                onWeekDaysSelected = { selectedWeekDays = it }
+            )
 
-        DosageUnitDropdown(
-            units = units,
-            selectedUnit = selectedUnit,
-            onUnitSelected = { selectedUnit = it },
-            onUnitAdded = { newUnit ->
-                // Fix Issue 1: Wait for the unit to be saved and get the actual ID
-                medVM.addDosageUnit(newUnit) { savedUnit ->
-                    selectedUnit = savedUnit
+            DosageUnitDropdown(
+                units = units,
+                selectedUnit = selectedUnit,
+                onUnitSelected = { selectedUnit = it },
+                onUnitAdded = { newUnit ->
+                    medVM.addDosageUnit(newUnit) { savedUnit ->
+                        selectedUnit = savedUnit
+                    }
                 }
-            }
-        )
+            )
 
-        TimeSelector(
-            selectedTime = selectedTime,
-            onTimeSelected = { selectedTime = it }
-        )
+            TimeSelector(
+                selectedTime = selectedTime,
+                onTimeSelected = { selectedTime = it }
+            )
 
-        SaveButton(
-            enabled = name.isNotBlank() && dosis.isNotBlank() && selectedUnit != null &&
-                    selectedTime != null && selectedFrequency != null,
-            onClick = {
-                user?.let { user ->
-                    selectedUnit?.let { unit ->
-                        selectedTime?.let { time ->
-                            selectedFrequency?.let { frequency ->
-                                val med = Medication(
-                                    medicationID = 0,
-                                    userID = user.userID,
-                                    name = name,
-                                    dosage = dosis,
-                                    dosageUnitID = unit.dosageUnitID
-                                )
-                                medVM.addMedicationWithScheduleAndFrequency(
-                                    medication = med,
-                                    frequency = frequency,
-                                    startTime = time,
-                                    selectedWeekDays = selectedWeekDays,
-                                    scheduleVM = scheduleVM
-                                )
+            SaveButton(
+                enabled = name.isNotBlank() && dosis.isNotBlank() && selectedUnit != null &&
+                        selectedTime != null && selectedFrequency != null,
+                onClick = {
+                    user?.let { user ->
+                        selectedUnit?.let { unit ->
+                            selectedTime?.let { time ->
+                                selectedFrequency?.let { frequency ->
+                                    val med = Medication(
+                                        medicationID = 0,
+                                        userID = user.userID,
+                                        name = name,
+                                        dosage = dosis,
+                                        dosageUnitID = unit.dosageUnitID
+                                    )
+                                    medVM.addMedicationWithScheduleAndFrequency(
+                                        medication = med,
+                                        frequency = frequency,
+                                        startTime = time,
+                                        selectedWeekDays = selectedWeekDays,
+                                        scheduleVM = scheduleVM
+                                    )
+
+                                    // Mostrar el snackbar
+                                    coroutineScope.launch {
+                                        snackbarHostState.showSnackbar("¡Guardado con éxito!")
+                                    }
+                                }
                             }
                         }
                     }
                 }
-            }
-        )
+            )
+        }
     }
 }
 

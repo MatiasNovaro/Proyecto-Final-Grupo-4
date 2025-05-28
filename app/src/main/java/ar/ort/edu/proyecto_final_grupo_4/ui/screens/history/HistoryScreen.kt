@@ -84,12 +84,12 @@ fun HistorialScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
             contentPadding = PaddingValues(bottom = 16.dp)
         ) {
-            items(medicineHistory) { dayData ->
-                DailyMedicineCard(
-                    medicines = dayData.medicines,
-                    dayTitle = dayData.dayTitle
-                )
-            }
+//            items(medicineHistory) { dayData ->
+//                DailyMedicineCard(
+//                    medicines = dayData.medicines,
+//                    dayTitle = dayData.dayTitle
+//                )
+          //  }
         }
     }
 }

@@ -13,6 +13,9 @@ import androidx.lifecycle.viewModelScope
 import ar.ort.edu.proyecto_final_grupo_4.domain.model.DayOfWeek
 import ar.ort.edu.proyecto_final_grupo_4.domain.model.DosageUnit
 import ar.ort.edu.proyecto_final_grupo_4.domain.model.Medication
+import ar.ort.edu.proyecto_final_grupo_4.domain.repository.DosageUnitRepository
+import ar.ort.edu.proyecto_final_grupo_4.domain.repository.MedicationRepository
+import ar.ort.edu.proyecto_final_grupo_4.domain.utils.FrequencyType
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -22,11 +25,15 @@ import java.time.LocalTime
 @HiltViewModel
 class ScheduleViewModel @Inject constructor(
     private val scheduleRepository: ScheduleRepository,
-    private val dayOfWeekRepository: DayOfWeekRepository // Necesitarás crear este repositorio
+    private val dayOfWeekRepository: DayOfWeekRepository,
+    private val medicationRepository: MedicationRepository,
+    private val dosageUnitRepository: DosageUnitRepository
 ) : ViewModel() {
 
     private val _schedules = MutableStateFlow<List<Schedule>>(emptyList())
     val schedules: StateFlow<List<Schedule>> = _schedules
+    private val _todaySchedules = MutableStateFlow<List<ScheduleWithDetails>>(emptyList())
+    val todaySchedules: StateFlow<List<ScheduleWithDetails>> = _todaySchedules
 
     // Método anterior para compatibilidad
     fun addSchedule(schedule: Schedule) {
@@ -75,11 +82,59 @@ class ScheduleViewModel @Inject constructor(
     }
 
     // Método para obtener schedules de hoy
-    fun getTodaySchedules(): StateFlow<List<ScheduleWithDetails>> {
-        // Implementar lógica para obtener schedules de hoy
-        // considerando el día de la semana actual y las frecuencias
-        return MutableStateFlow(emptyList()) // Placeholder
+    fun loadTodaySchedules() {
+        //val result = MutableStateFlow<List<ScheduleWithDetails>>(emptyList())
+
+        viewModelScope.launch {
+            val allSchedules = scheduleRepository.getAllSchedules()
+            val today = LocalDate.now()
+            val dayOfWeek = today.dayOfWeek.value % 7 // Sunday = 0, Monday = 1, ...
+
+            val todaySchedules = mutableListOf<ScheduleWithDetails>()
+
+            for (schedule in allSchedules) {
+                val isInDateRange = !schedule.startDate.isAfter(today) &&
+                        (schedule.endDate == null || !today.isAfter(schedule.endDate))
+
+                val weekDays: List<DayOfWeek> =
+                    dayOfWeekRepository.getDaysForSchedule(schedule.scheduleID)
+                val weekDayInts = weekDays.map { it.dayOfWeek }
+                val isScheduledToday = when (schedule.frequencyType) {
+                    FrequencyType.DAILY,
+                    FrequencyType.HOURS_INTERVAL,
+                    FrequencyType.TIMES_PER_DAY,
+                    FrequencyType.DAYS_INTERVAL,
+                    FrequencyType.AS_NEEDED -> true
+                    FrequencyType.WEEKLY -> weekDayInts.contains(dayOfWeek)
+
+                }
+                if (isInDateRange && isScheduledToday) {
+                    val med = medicationRepository.getById(schedule.medicationID)
+                    val unit = med?.let { dosageUnitRepository.getById(it.dosageUnitID) }
+                    val nextTime = schedule.startTime.atDate(today)
+                    val now = LocalDateTime.now()
+                    val isCompleted = false // implementar si querés tracking
+
+                    if (med != null && unit != null) {
+                        val detail = ScheduleWithDetails(
+                            schedule = schedule,
+                            medication = med,
+                            dosageUnit = unit,
+                            weekDays = weekDays,
+                            nextDose = nextTime,
+                            isCompletedToday = isCompleted
+                        )
+                        println(detail)
+                        todaySchedules.add(detail)
+                    }
+                }
+            }
+            //println(todaySchedules)
+            _todaySchedules.value = todaySchedules.sortedBy { it.nextDose }
+        }
+
     }
+
 
     // Método para marcar una toma como completada
     fun markScheduleAsCompleted(scheduleId: Int, date: LocalDate, time: LocalTime) {
@@ -114,12 +169,13 @@ class ScheduleViewModel @Inject constructor(
     }
 }
 
+
 // Data class para mostrar información completa del schedule
 data class ScheduleWithDetails(
     val schedule: Schedule,
     val medication: Medication,
     val dosageUnit: DosageUnit,
-    val weekDays: List<Int>,
+    val weekDays: List<DayOfWeek>,
     val nextDose: LocalDateTime?,
     val isCompletedToday: Boolean = false
 )
