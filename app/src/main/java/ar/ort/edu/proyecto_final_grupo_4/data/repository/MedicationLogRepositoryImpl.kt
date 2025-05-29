@@ -12,7 +12,7 @@ class MedicationLogRepositoryImpl @Inject constructor(
 
     override suspend fun insertLog(log: MedicationLog) {
         require(log.scheduleID > 0) { "El ID de horario no es válido." }
-        require(!log.wasTaken.isAfter(LocalDateTime.now())) { "No se puede registrar una toma en el futuro." }
+        require(!log.timestamp.isAfter(LocalDateTime.now())) { "No se puede registrar una toma en el futuro." }
         medicationLogDao.insertLog(log)
     }
 

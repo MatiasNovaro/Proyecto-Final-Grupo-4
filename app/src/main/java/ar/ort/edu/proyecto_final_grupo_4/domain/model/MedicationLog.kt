@@ -3,7 +3,6 @@ package ar.ort.edu.proyecto_final_grupo_4.domain.model
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
-import androidx.room.Index
 import java.time.LocalDateTime
 
 @Entity(
@@ -19,7 +18,8 @@ import java.time.LocalDateTime
 )
 data class MedicationLog(
     @PrimaryKey(autoGenerate = true)
-    val logID: Int=0,
-    val scheduleID: Int,
-    val wasTaken: LocalDateTime
+    val logID: Long=0,
+    val scheduleID: Long,
+    val wasTaken: Boolean,
+    val timestamp: LocalDateTime
 )
