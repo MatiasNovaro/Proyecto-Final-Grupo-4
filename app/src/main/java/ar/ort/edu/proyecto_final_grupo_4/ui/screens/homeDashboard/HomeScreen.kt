@@ -27,13 +27,10 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import ar.ort.edu.proyecto_final_grupo_4.ui.components.CustomButton
 import ar.ort.edu.proyecto_final_grupo_4.ui.components.DailyMedicineCard
-import ar.ort.edu.proyecto_final_grupo_4.ui.screens.Screens
+import ar.ort.edu.proyecto_final_grupo_4.navigation.Screens
 import ar.ort.edu.proyecto_final_grupo_4.ui.theme.LightCream
 import ar.ort.edu.proyecto_final_grupo_4.ui.theme.PrimaryOrange
 import ar.ort.edu.proyecto_final_grupo_4.viewmodel.UserViewModel
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.ui.unit.min
 import ar.ort.edu.proyecto_final_grupo_4.viewmodel.ScheduleViewModel
 
 @SuppressLint("SuspiciousIndentation")

@@ -8,25 +8,16 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.rememberNavController
 import ar.ort.edu.proyecto_final_grupo_4.navigation.Navigation
 import ar.ort.edu.proyecto_final_grupo_4.ui.components.BottomNavigationBar
 import ar.ort.edu.proyecto_final_grupo_4.ui.components.CustomTopBar
 import androidx.fragment.app.FragmentActivity
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
-import ar.ort.edu.proyecto_final_grupo_4.ui.screens.Screens
-import ar.ort.edu.proyecto_final_grupo_4.ui.screens.addMedication.AddMedicationScreen
-import ar.ort.edu.proyecto_final_grupo_4.ui.screens.biometricLogin.BiometricLoginScreen
-import ar.ort.edu.proyecto_final_grupo_4.ui.screens.homeDashboard.HomeScreen
 import ar.ort.edu.proyecto_final_grupo_4.ui.theme.ProyectoFinalGrupo4Theme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -64,43 +55,6 @@ class MainActivity : FragmentActivity() {
                         )
                     }
                 }
-                MainNavigation()
-            }
-        }
-    }
-}
-
-@Composable
-private fun MainNavigation() {
-    val navController = rememberNavController()
-
-    Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-        NavHost(
-            modifier = Modifier.padding(innerPadding),
-            navController = navController,
-            startDestination = Screens.BiometricLogin.screen
-        ) {
-            composable(Screens.BiometricLogin.screen) {
-                BiometricLoginScreen(
-                    onAuthenticationSuccess = {
-                        navController.navigate(Screens.Home.screen) {
-                            popUpTo(Screens.BiometricLogin.screen) {
-                                inclusive = true
-                            }
-                        }
-                    },
-                    onAuthenticationError = { error ->
-                        // Manejar errores si es necesario
-                    }
-                )
-            }
-
-            composable(Screens.Home.screen) {
-                HomeScreen(navController)
-            }
-
-            composable(Screens.AddMedication.screen) {
-                AddMedicationScreen()
             }
         }
     }

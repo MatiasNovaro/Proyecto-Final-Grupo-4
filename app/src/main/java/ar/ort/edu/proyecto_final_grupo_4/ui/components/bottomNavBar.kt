@@ -9,7 +9,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavController
-import ar.ort.edu.proyecto_final_grupo_4.ui.screens.Screens
+import ar.ort.edu.proyecto_final_grupo_4.navigation.Screens
 
 @Composable
 fun BottomNavigationBar(navController: NavController) {
