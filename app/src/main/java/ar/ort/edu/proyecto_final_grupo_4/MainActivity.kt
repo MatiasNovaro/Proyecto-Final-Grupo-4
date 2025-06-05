@@ -3,11 +3,22 @@ package ar.ort.edu.proyecto_final_grupo_4
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.navigation.compose.rememberNavController
+import ar.ort.edu.proyecto_final_grupo_4.navigation.Navigation
+import ar.ort.edu.proyecto_final_grupo_4.ui.components.BottomNavigationBar
+import ar.ort.edu.proyecto_final_grupo_4.ui.components.CustomTopBar
 import androidx.fragment.app.FragmentActivity
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -26,6 +37,33 @@ class MainActivity : FragmentActivity() {
         enableEdgeToEdge()
         setContent {
             ProyectoFinalGrupo4Theme {
+
+                val navController = rememberNavController()
+                val currentTitle = remember { mutableStateOf("Home") }
+                Scaffold(modifier = Modifier.fillMaxSize(),
+                    topBar = {
+                        CustomTopBar(
+                            title = currentTitle.value,
+                            modifier = Modifier.height(30.dp)
+                        )
+                    },
+                    bottomBar = {
+                        BottomNavigationBar(navController = navController)
+                    }
+                ) { innerPadding ->
+                    Column(
+                        modifier = Modifier
+                            .padding(innerPadding)
+                            .fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        //verticalArrangement = Arrangement.Center
+                    ) {
+                        Navigation(
+                            onDestinationChanged = { title -> currentTitle.value = title },
+                            navController = navController
+                        )
+                    }
+                }
                 MainNavigation()
             }
         }
