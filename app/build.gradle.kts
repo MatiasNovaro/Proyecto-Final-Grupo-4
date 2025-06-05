@@ -80,4 +80,9 @@ dependencies {
     ksp(libs.room.compiler)
 
     implementation("androidx.work:work-runtime-ktx:2.9.0")
+
+    // Biometric authentication
+    implementation("androidx.biometric:biometric:1.1.0")
+    implementation ("androidx.navigation:navigation-compose:2.7.6")
+    implementation ("androidx.fragment:fragment-ktx:1.6.2")
 }
