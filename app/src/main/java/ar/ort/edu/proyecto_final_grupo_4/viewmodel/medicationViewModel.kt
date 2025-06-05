@@ -30,7 +30,7 @@ class MedicationViewModel @Inject constructor(
     private val _dosageUnits = MutableStateFlow<List<DosageUnit>>(emptyList())
     val dosageUnits: StateFlow<List<DosageUnit>> = _dosageUnits
 
-    fun loadMedications(userId: Int) {
+    private fun loadMedications(userId: Int) {
         viewModelScope.launch {
             _medications.value = medicationRepository.getMedicationsByUser(userId)
         }
@@ -63,7 +63,6 @@ class MedicationViewModel @Inject constructor(
         }
     }
 
-    // Nuevo método con frecuencias completas
     fun addMedicationWithScheduleAndFrequency(
         medication: Medication,
         frequency: FrequencyOption,
@@ -73,10 +72,8 @@ class MedicationViewModel @Inject constructor(
     ) {
         viewModelScope.launch {
             try {
-                // 1. Insertar el medicamento y obtener su ID
                 val medicationId = insertMedicationAndReturnId(medication)
 
-                // 2. Crear el schedule principal
                 val schedule = Schedule(
                     scheduleID = 0,
                     medicationID = medicationId,
@@ -88,18 +85,14 @@ class MedicationViewModel @Inject constructor(
                     startDate = LocalDate.now()
                 )
 
-                // 3. Insertar el schedule y obtener su ID
                 val scheduleId = scheduleVM.addScheduleAndReturnId(schedule)
 
-                // 4. Si es frecuencia semanal, agregar los días específicos
                 if (frequency.frequencyType == FrequencyType.WEEKLY && selectedWeekDays.isNotEmpty()) {
                     scheduleVM.addWeekDays(scheduleId, selectedWeekDays)
                 } else if (frequency.frequencyType == FrequencyType.DAILY) {
-                    // Para diario, agregar todos los días
                     scheduleVM.addWeekDays(scheduleId, (0..6).toList())
                 }
 
-                // 5. Generar horarios adicionales si es necesario (ej: varias veces al día)
                 val additionalTimes = generateAdditionalTimes(frequency, startTime)
                 additionalTimes.forEach { time ->
                     val additionalSchedule = schedule.copy(
@@ -108,7 +101,6 @@ class MedicationViewModel @Inject constructor(
                     )
                     val additionalScheduleId = scheduleVM.addScheduleAndReturnId(additionalSchedule)
 
-                    // Agregar días para cada horario adicional
                     if (frequency.frequencyType == FrequencyType.WEEKLY && selectedWeekDays.isNotEmpty()) {
                         scheduleVM.addWeekDays(additionalScheduleId, selectedWeekDays)
                     } else if (frequency.frequencyType == FrequencyType.DAILY) {
@@ -116,12 +108,10 @@ class MedicationViewModel @Inject constructor(
                     }
                 }
 
-                // 6. Recargar medicamentos
                 loadMedications(medication.userID)
 
             } catch (e: Exception) {
                 Log.e("MedicationViewModel", "Error adding medication with frequency", e)
-                // Aquí podrías emitir un error state si lo necesitas
             }
         }
     }
@@ -129,11 +119,9 @@ class MedicationViewModel @Inject constructor(
     private fun calculateEndTime(frequency: FrequencyOption, startTime: LocalTime): LocalTime? {
         return when (frequency.frequencyType) {
             FrequencyType.TIMES_PER_DAY -> {
-                // Para varias veces al día, calcular hora de fin (ej: 12 horas después)
                 startTime.plusHours(12)
             }
             FrequencyType.HOURS_INTERVAL -> {
-                // Para intervalos de horas, no necesitamos hora de fin específica
                 null
             }
             else -> null
@@ -146,8 +134,7 @@ class MedicationViewModel @Inject constructor(
                 val times = frequency.intervalValue ?: 1
                 if (times <= 1) return emptyList()
 
-                // Generar horarios distribuidos durante el día
-                val hoursInterval = 12 / (times - 1) // Distribuir en 12 horas
+                val hoursInterval = 12 / (times - 1)
                 (1 until times).map { i ->
                     startTime.plusHours((hoursInterval * i).toLong())
                 }
@@ -157,7 +144,6 @@ class MedicationViewModel @Inject constructor(
                 val intervalHours = frequency.intervalValue ?: 24
                 if (intervalHours >= 24) return emptyList()
 
-                // Generar horarios durante el día según el intervalo
                 val timesPerDay = 24 / intervalHours
                 (1 until timesPerDay).map { i ->
                     startTime.plusHours((intervalHours * i).toLong())
@@ -168,7 +154,7 @@ class MedicationViewModel @Inject constructor(
         }
     }
 
-    suspend fun insertMedicationAndReturnId(medication: Medication): Long {
+    private suspend fun insertMedicationAndReturnId(medication: Medication): Long {
         return medicationRepository.insertMedication(medication)
     }
 

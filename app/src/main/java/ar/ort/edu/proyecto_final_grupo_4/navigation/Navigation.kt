@@ -1,4 +1,4 @@
-package ar.ort.edu.proyecto_final_grupo_4
+package ar.ort.edu.proyecto_final_grupo_4.navigation
 
 import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.NavHostController
