@@ -24,14 +24,17 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import ar.ort.edu.proyecto_final_grupo_4.R
 import ar.ort.edu.proyecto_final_grupo_4.domain.model.Schedule
 import ar.ort.edu.proyecto_final_grupo_4.ui.components.CustomButton
 import ar.ort.edu.proyecto_final_grupo_4.viewmodel.ReminderViewModel
 
-@Composable
-fun ReminderScreen(schedule: Schedule,reminderViewModel: ReminderViewModel = hiltViewModel()) {
 
+@Composable
+fun ReminderScreen(navController:NavController,schedule: Schedule) {
+
+    val reminderViewModel: ReminderViewModel = hiltViewModel()
     LaunchedEffect(schedule) {
         reminderViewModel.loadMedication(schedule)
     }
@@ -118,3 +121,4 @@ fun ReminderScreen(schedule: Schedule,reminderViewModel: ReminderViewModel = hil
             }
         }
     }}
+

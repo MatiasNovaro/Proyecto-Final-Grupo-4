@@ -16,4 +16,8 @@ interface MedicationLogDao {
 
     @Query("SELECT * FROM medication_log ORDER BY wasTaken DESC")
     suspend fun getAllLogs(): List<MedicationLog>
+
+    @Query("DELETE FROM medication_log WHERE  scheduleID= :scheduleId")
+    suspend fun deleteByMedicationId(scheduleId: Long)
+
 }

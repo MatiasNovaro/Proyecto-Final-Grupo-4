@@ -6,8 +6,12 @@ import androidx.lifecycle.viewModelScope
 import ar.ort.edu.proyecto_final_grupo_4.domain.model.DosageUnit
 import ar.ort.edu.proyecto_final_grupo_4.domain.model.Medication
 import ar.ort.edu.proyecto_final_grupo_4.domain.model.Schedule
+import ar.ort.edu.proyecto_final_grupo_4.domain.model.User
+import ar.ort.edu.proyecto_final_grupo_4.domain.repository.DayOfWeekRepository
 import ar.ort.edu.proyecto_final_grupo_4.domain.repository.DosageUnitRepository
+import ar.ort.edu.proyecto_final_grupo_4.domain.repository.MedicationLogRepository
 import ar.ort.edu.proyecto_final_grupo_4.domain.repository.MedicationRepository
+import ar.ort.edu.proyecto_final_grupo_4.domain.repository.ScheduleRepository
 import ar.ort.edu.proyecto_final_grupo_4.domain.utils.FrequencyOption
 import ar.ort.edu.proyecto_final_grupo_4.domain.utils.FrequencyType
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -21,16 +25,19 @@ import javax.inject.Inject
 @HiltViewModel
 class MedicationViewModel @Inject constructor(
     private val medicationRepository: MedicationRepository,
-    private val dosageUnitRepository: DosageUnitRepository
-) : ViewModel() {
+    private val dosageUnitRepository: DosageUnitRepository,
+    private val medicationLogRepository: MedicationLogRepository,
+    private val scheduleRepository: ScheduleRepository,
+    private val dayOfWeekRepository: DayOfWeekRepository
 
+) : ViewModel() {
     private val _medications = MutableStateFlow<List<Medication>>(emptyList())
     val medications: StateFlow<List<Medication>> = _medications
 
     private val _dosageUnits = MutableStateFlow<List<DosageUnit>>(emptyList())
     val dosageUnits: StateFlow<List<DosageUnit>> = _dosageUnits
 
-    private fun loadMedications(userId: Int) {
+    fun loadMedications(userId: Int) {
         viewModelScope.launch {
             _medications.value = medicationRepository.getMedicationsByUser(userId)
         }
@@ -160,8 +167,26 @@ class MedicationViewModel @Inject constructor(
 
     fun deleteMedication(medication: Medication) {
         viewModelScope.launch {
-            medicationRepository.deleteMedication(medication)
-            loadMedications(medication.userID)
+            try {
+                // 1. Eliminar los logs
+                medicationLogRepository.deleteMedicationLogs(medication.medicationID)
+
+                // 2. Eliminar los schedules asociados
+                // Primero los días de la semana
+                scheduleRepository.getSchedulesForMedication(medication.medicationID).forEach { schedule ->
+                    dayOfWeekRepository.deleteDaysForSchedule(schedule.scheduleID)
+                }
+                // Luego los schedules
+                scheduleRepository.deleteSchedulesForMedication(medication.medicationID)
+
+                // 3. Finalmente eliminar el medicamento
+                medicationRepository.deleteMedication(medication)
+
+                // 4. Recargar la lista de medicamentos
+                loadMedications(medication.userID)
+            } catch (e: Exception) {
+                Log.e("MedicationViewModel", "Error deleting medication", e)
+            }
         }
     }
 

@@ -43,6 +43,10 @@ class ScheduleRepositoryImpl @Inject constructor(
         TODO("Not yet implemented")
     }
 
+    override suspend fun deleteSchedulesForMedication(medicationId: Long) {
+        scheduleDao.deleteByMedicationId(medicationId)
+    }
+
     override suspend fun deleteSchedule(scheduleId: Long) {
         scheduleDao.deleteSchedule(scheduleId)
     }
