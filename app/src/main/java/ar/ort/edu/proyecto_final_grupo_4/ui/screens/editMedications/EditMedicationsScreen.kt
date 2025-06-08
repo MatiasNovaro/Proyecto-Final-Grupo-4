@@ -7,11 +7,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import ar.ort.edu.proyecto_final_grupo_4.navigation.Screens
 import ar.ort.edu.proyecto_final_grupo_4.viewmodel.MedicationViewModel
 import ar.ort.edu.proyecto_final_grupo_4.ui.components.EditMedicationsItem
 import ar.ort.edu.proyecto_final_grupo_4.viewmodel.UserViewModel
@@ -25,15 +24,19 @@ fun EditMedicationsScreen(
 
     val user by userViewModel.user.collectAsState()
     val medications by medicationViewModel.medications.collectAsState(initial = emptyList())
+    val showErrorDialog by medicationViewModel.showErrorDialog.collectAsState()
 
-    LaunchedEffect(Unit) {
-        userViewModel.ensureDefaultUser()
-    }
-
-    LaunchedEffect(user?.userID) {
-        user?.userID?.let { userId ->
-            medicationViewModel.loadMedications(userId)
-        }
+    if (showErrorDialog) {
+        AlertDialog(
+            onDismissRequest = { medicationViewModel.dismissErrorDialog() },
+            title = { Text("No se puede eliminar") },
+            text = { Text("No se puede eliminar este medicamento porque tiene registros de tomas asociados.") },
+            confirmButton = {
+                TextButton(onClick = { medicationViewModel.dismissErrorDialog() }) {
+                    Text("Aceptar")
+                }
+            }
+        )
     }
 
     Column(
@@ -41,13 +44,6 @@ fun EditMedicationsScreen(
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        Text(
-            text = "Editar Medicamentos",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 16.dp)
-        )
-
         LazyColumn {
             items(
                 items = medications.distinctBy { it.medicationID },
@@ -59,7 +55,7 @@ fun EditMedicationsScreen(
                         medicationViewModel.deleteMedication(medication)
                     },
                     onUpdate = {
-                        navController.navigate("editMedication/${medication.medicationID}")
+                        // to do
                     }
                 )
                 Spacer(modifier = Modifier.height(8.dp))

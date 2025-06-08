@@ -6,5 +6,5 @@ interface MedicationLogRepository {
     suspend fun insertLog(log: MedicationLog)
     suspend fun getLogsForSchedule(scheduleId: Int): List<MedicationLog>
     suspend fun getAllLogs(): List<MedicationLog>
-    suspend fun deleteMedicationLogs(medicationId: Long)
+    suspend fun getMedicationLogs(lng: Long): List<MedicationLog>
 }

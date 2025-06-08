@@ -17,6 +17,8 @@ import ar.ort.edu.proyecto_final_grupo_4.domain.utils.FrequencyType
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalTime
@@ -36,6 +38,9 @@ class MedicationViewModel @Inject constructor(
 
     private val _dosageUnits = MutableStateFlow<List<DosageUnit>>(emptyList())
     val dosageUnits: StateFlow<List<DosageUnit>> = _dosageUnits
+    private val _showErrorDialog = MutableStateFlow(false)
+    val showErrorDialog = _showErrorDialog.asStateFlow()
+
 
     fun loadMedications(userId: Int) {
         viewModelScope.launch {
@@ -165,29 +170,28 @@ class MedicationViewModel @Inject constructor(
         return medicationRepository.insertMedication(medication)
     }
 
+
     fun deleteMedication(medication: Medication) {
         viewModelScope.launch {
-            try {
-                // 1. Eliminar los logs
-                medicationLogRepository.deleteMedicationLogs(medication.medicationID)
-
-                // 2. Eliminar los schedules asociados
-                // Primero los días de la semana
-                scheduleRepository.getSchedulesForMedication(medication.medicationID).forEach { schedule ->
-                    dayOfWeekRepository.deleteDaysForSchedule(schedule.scheduleID)
+            val logs = medicationLogRepository.getMedicationLogs(medication.medicationID)
+            if (logs.isEmpty()) {
+                try {
+                    scheduleRepository.getSchedulesForMedication(medication.medicationID).forEach { schedule ->
+                        dayOfWeekRepository.deleteDaysForSchedule(schedule.scheduleID)
+                    }
+                    scheduleRepository.deleteSchedulesForMedication(medication.medicationID)
+                    medicationRepository.deleteMedication(medication)
+                    loadMedications(medication.userID)
+                } catch (e: Exception) {
+                    Log.e("MedicationViewModel", "Error deleting medication", e)
                 }
-                // Luego los schedules
-                scheduleRepository.deleteSchedulesForMedication(medication.medicationID)
-
-                // 3. Finalmente eliminar el medicamento
-                medicationRepository.deleteMedication(medication)
-
-                // 4. Recargar la lista de medicamentos
-                loadMedications(medication.userID)
-            } catch (e: Exception) {
-                Log.e("MedicationViewModel", "Error deleting medication", e)
+            } else {
+                _showErrorDialog.value = true
             }
         }
+    }
+    fun dismissErrorDialog() {
+        _showErrorDialog.value = false
     }
 
     fun loadDosageUnits() {
