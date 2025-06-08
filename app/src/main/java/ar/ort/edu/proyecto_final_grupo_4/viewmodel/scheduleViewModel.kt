@@ -16,11 +16,13 @@ import ar.ort.edu.proyecto_final_grupo_4.domain.model.Medication
 import ar.ort.edu.proyecto_final_grupo_4.domain.repository.DosageUnitRepository
 import ar.ort.edu.proyecto_final_grupo_4.domain.repository.MedicationRepository
 import ar.ort.edu.proyecto_final_grupo_4.domain.utils.FrequencyType
+import ar.ort.edu.proyecto_final_grupo_4.ui.screens.history.ScheduleHistoryItem
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
-
+import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 
 @HiltViewModel
 class ScheduleViewModel @Inject constructor(
@@ -32,8 +34,13 @@ class ScheduleViewModel @Inject constructor(
 
     private val _schedules = MutableStateFlow<List<Schedule>>(emptyList())
     val schedules: StateFlow<List<Schedule>> = _schedules
+
     private val _todaySchedules = MutableStateFlow<List<ScheduleWithDetails>>(emptyList())
     val todaySchedules: StateFlow<List<ScheduleWithDetails>> = _todaySchedules
+
+    // NUEVO: StateFlow para el historial
+    private val _historySchedules = MutableStateFlow<List<ScheduleHistoryItem>>(emptyList())
+    val historySchedules: StateFlow<List<ScheduleHistoryItem>> = _historySchedules
 
     // Método anterior para compatibilidad
     fun addSchedule(schedule: Schedule) {
@@ -83,8 +90,6 @@ class ScheduleViewModel @Inject constructor(
 
     // Método para obtener schedules de hoy
     fun loadTodaySchedules() {
-        //val result = MutableStateFlow<List<ScheduleWithDetails>>(emptyList())
-
         viewModelScope.launch {
             val allSchedules = scheduleRepository.getAllSchedules()
             val today = LocalDate.now()
@@ -106,13 +111,12 @@ class ScheduleViewModel @Inject constructor(
                     FrequencyType.DAYS_INTERVAL,
                     FrequencyType.AS_NEEDED -> true
                     FrequencyType.WEEKLY -> weekDayInts.contains(dayOfWeek)
-
                 }
+
                 if (isInDateRange && isScheduledToday) {
                     val med = medicationRepository.getById(schedule.medicationID)
                     val unit = med?.let { dosageUnitRepository.getById(it.dosageUnitID) }
                     val nextTime = schedule.startTime.atDate(today)
-                    val now = LocalDateTime.now()
                     val isCompleted = false // implementar si querés tracking
 
                     if (med != null && unit != null) {
@@ -129,12 +133,87 @@ class ScheduleViewModel @Inject constructor(
                     }
                 }
             }
-            //println(todaySchedules)
             _todaySchedules.value = todaySchedules.sortedBy { it.nextDose }
         }
-
     }
 
+    // NUEVO: Método para cargar el historial de medicamentos
+    fun loadHistorySchedules() {
+        viewModelScope.launch {
+            try {
+                val allSchedules = scheduleRepository.getAllSchedules()
+                val historyItems = mutableListOf<ScheduleHistoryItem>()
+                val today = LocalDate.now()
+
+                // Generar historial para los últimos 7 días
+                for (daysBack in 0..6) {
+                    val targetDate = today.minusDays(daysBack.toLong())
+                    val dayOfWeek = targetDate.dayOfWeek.value % 7
+
+                    for (schedule in allSchedules) {
+                        val isInDateRange = !schedule.startDate.isAfter(targetDate) &&
+                                (schedule.endDate == null || !targetDate.isAfter(schedule.endDate))
+
+                        val weekDays = dayOfWeekRepository.getDaysForSchedule(schedule.scheduleID)
+                        val weekDayInts = weekDays.map { it.dayOfWeek }
+
+                        val isScheduledThisDay = when (schedule.frequencyType) {
+                            FrequencyType.DAILY,
+                            FrequencyType.HOURS_INTERVAL,
+                            FrequencyType.TIMES_PER_DAY,
+                            FrequencyType.DAYS_INTERVAL,
+                            FrequencyType.AS_NEEDED -> true
+                            FrequencyType.WEEKLY -> weekDayInts.contains(dayOfWeek)
+                        }
+
+                        if (isInDateRange && isScheduledThisDay) {
+                            val medication = medicationRepository.getById(schedule.medicationID)
+                            val dosageUnit = medication?.let {
+                                dosageUnitRepository.getById(it.dosageUnitID)
+                            }
+
+                            if (medication != null && dosageUnit != null) {
+                                val historyItem = ScheduleHistoryItem(
+                                    id = "${schedule.scheduleID}_${targetDate}",
+                                    medicationName = medication.name,
+                                    dosage = "${medication.dosage} ${dosageUnit.name}",
+                                    time = schedule.startTime.format(DateTimeFormatter.ofPattern("HH:mm")),
+                                    isTaken = generateRandomTakenStatus(), // Por ahora random, después implementar tracking real
+                                    dayLabel = getDayLabel(targetDate, today)
+                                )
+                                historyItems.add(historyItem)
+                            }
+                        }
+                    }
+                }
+
+                _historySchedules.value = historyItems.sortedByDescending {
+                    LocalDate.parse(it.dayLabel.takeLastWhile { it.isDigit() || it == '/' || it == '-' }.ifEmpty { "2024-01-01" })
+                }.sortedBy { it.time }
+
+            } catch (e: Exception) {
+                Log.e("ScheduleViewModel", "Error loading history schedules", e)
+                _historySchedules.value = emptyList()
+            }
+        }
+    }
+
+    // Función auxiliar para generar el label del día
+    private fun getDayLabel(targetDate: LocalDate, today: LocalDate): String {
+        val daysBetween = ChronoUnit.DAYS.between(targetDate, today)
+
+        return when (daysBetween.toInt()) {
+            0 -> "Hoy"
+            1 -> "Ayer"
+            in 2..6 -> "${daysBetween.toInt()} días atrás"
+            else -> targetDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+        }
+    }
+
+    // Por ahora generar status random, después implementar tracking real
+    private fun generateRandomTakenStatus(): Boolean {
+        return (0..1).random() == 1
+    }
 
     // Método para marcar una toma como completada
     fun markScheduleAsCompleted(scheduleId: Int, date: LocalDate, time: LocalTime) {
@@ -168,7 +247,6 @@ class ScheduleViewModel @Inject constructor(
         }
     }
 }
-
 
 // Data class para mostrar información completa del schedule
 data class ScheduleWithDetails(
