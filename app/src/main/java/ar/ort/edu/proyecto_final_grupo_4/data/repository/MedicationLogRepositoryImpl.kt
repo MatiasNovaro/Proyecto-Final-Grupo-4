@@ -23,4 +23,8 @@ class MedicationLogRepositoryImpl @Inject constructor(
     override suspend fun getAllLogs(): List<MedicationLog> {
         return medicationLogDao.getAllLogs()
     }
+
+    override suspend fun getMedicationLogs(medicationId: Long): List<MedicationLog> {
+        return medicationLogDao.getMedicationLogs(medicationId)
+    }
 }

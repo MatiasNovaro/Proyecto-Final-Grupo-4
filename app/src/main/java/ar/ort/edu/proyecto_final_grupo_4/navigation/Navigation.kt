@@ -7,6 +7,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.NavHost
 import ar.ort.edu.proyecto_final_grupo_4.ui.screens.addMedication.AddMedicationScreen
 import ar.ort.edu.proyecto_final_grupo_4.ui.screens.homeDashboard.HomeScreen
+import ar.ort.edu.proyecto_final_grupo_4.ui.screens.editMedications.EditMedicationsScreen
 
 @Composable
 fun Navigation(navController: NavHostController, onDestinationChanged: (String) -> Unit){
@@ -15,6 +16,8 @@ fun Navigation(navController: NavHostController, onDestinationChanged: (String) 
             when (backStackEntry.destination.route) {
                 Screens.Home.screen -> onDestinationChanged("Home")
                 Screens.AddMedication.screen -> onDestinationChanged("Agregar Medicación")
+                Screens.EditMedications.screen -> onDestinationChanged("")
+
             }
         }
     }
@@ -24,6 +27,9 @@ fun Navigation(navController: NavHostController, onDestinationChanged: (String) 
         }
         composable(route= Screens.AddMedication.screen){
             AddMedicationScreen(navController= navController )
+        }
+        composable(Screens.EditMedications.screen) {
+            EditMedicationsScreen(navController)
         }
     }
 }

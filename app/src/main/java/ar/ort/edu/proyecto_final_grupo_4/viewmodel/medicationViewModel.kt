@@ -6,13 +6,19 @@ import androidx.lifecycle.viewModelScope
 import ar.ort.edu.proyecto_final_grupo_4.domain.model.DosageUnit
 import ar.ort.edu.proyecto_final_grupo_4.domain.model.Medication
 import ar.ort.edu.proyecto_final_grupo_4.domain.model.Schedule
+import ar.ort.edu.proyecto_final_grupo_4.domain.model.User
+import ar.ort.edu.proyecto_final_grupo_4.domain.repository.DayOfWeekRepository
 import ar.ort.edu.proyecto_final_grupo_4.domain.repository.DosageUnitRepository
+import ar.ort.edu.proyecto_final_grupo_4.domain.repository.MedicationLogRepository
 import ar.ort.edu.proyecto_final_grupo_4.domain.repository.MedicationRepository
+import ar.ort.edu.proyecto_final_grupo_4.domain.repository.ScheduleRepository
 import ar.ort.edu.proyecto_final_grupo_4.domain.utils.FrequencyOption
 import ar.ort.edu.proyecto_final_grupo_4.domain.utils.FrequencyType
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalTime
@@ -21,16 +27,22 @@ import javax.inject.Inject
 @HiltViewModel
 class MedicationViewModel @Inject constructor(
     private val medicationRepository: MedicationRepository,
-    private val dosageUnitRepository: DosageUnitRepository
-) : ViewModel() {
+    private val dosageUnitRepository: DosageUnitRepository,
+    private val medicationLogRepository: MedicationLogRepository,
+    private val scheduleRepository: ScheduleRepository,
+    private val dayOfWeekRepository: DayOfWeekRepository
 
+) : ViewModel() {
     private val _medications = MutableStateFlow<List<Medication>>(emptyList())
     val medications: StateFlow<List<Medication>> = _medications
 
     private val _dosageUnits = MutableStateFlow<List<DosageUnit>>(emptyList())
     val dosageUnits: StateFlow<List<DosageUnit>> = _dosageUnits
+    private val _showErrorDialog = MutableStateFlow(false)
+    val showErrorDialog = _showErrorDialog.asStateFlow()
 
-    private fun loadMedications(userId: Int) {
+
+    fun loadMedications(userId: Int) {
         viewModelScope.launch {
             _medications.value = medicationRepository.getMedicationsByUser(userId)
         }
@@ -158,11 +170,28 @@ class MedicationViewModel @Inject constructor(
         return medicationRepository.insertMedication(medication)
     }
 
+
     fun deleteMedication(medication: Medication) {
         viewModelScope.launch {
-            medicationRepository.deleteMedication(medication)
-            loadMedications(medication.userID)
+            val logs = medicationLogRepository.getMedicationLogs(medication.medicationID)
+            if (logs.isEmpty()) {
+                try {
+                    scheduleRepository.getSchedulesForMedication(medication.medicationID).forEach { schedule ->
+                        dayOfWeekRepository.deleteDaysForSchedule(schedule.scheduleID)
+                    }
+                    scheduleRepository.deleteSchedulesForMedication(medication.medicationID)
+                    medicationRepository.deleteMedication(medication)
+                    loadMedications(medication.userID)
+                } catch (e: Exception) {
+                    Log.e("MedicationViewModel", "Error deleting medication", e)
+                }
+            } else {
+                _showErrorDialog.value = true
+            }
         }
+    }
+    fun dismissErrorDialog() {
+        _showErrorDialog.value = false
     }
 
     fun loadDosageUnits() {
