@@ -8,6 +8,7 @@ import androidx.navigation.compose.NavHost
 import ar.ort.edu.proyecto_final_grupo_4.ui.screens.addMedication.AddMedicationScreen
 import ar.ort.edu.proyecto_final_grupo_4.ui.screens.homeDashboard.HomeScreen
 import ar.ort.edu.proyecto_final_grupo_4.ui.screens.editMedications.EditMedicationsScreen
+import ar.ort.edu.proyecto_final_grupo_4.ui.screens.history.HistoryScreen
 
 @Composable
 fun Navigation(navController: NavHostController, onDestinationChanged: (String) -> Unit){
@@ -17,6 +18,7 @@ fun Navigation(navController: NavHostController, onDestinationChanged: (String) 
                 Screens.Home.screen -> onDestinationChanged("Home")
                 Screens.AddMedication.screen -> onDestinationChanged("Agregar Medicación")
                 Screens.EditMedications.screen -> onDestinationChanged("")
+                Screens.History.screen -> onDestinationChanged("Historial")
 
             }
         }
@@ -28,8 +30,12 @@ fun Navigation(navController: NavHostController, onDestinationChanged: (String) 
         composable(route= Screens.AddMedication.screen){
             AddMedicationScreen(navController= navController )
         }
-        composable(Screens.EditMedications.screen) {
+        composable(route= Screens.EditMedications.screen) {
             EditMedicationsScreen(navController)
+        }
+        composable(route= Screens.History.screen) {
+            HistoryScreen(navController= navController )
         }
     }
 }
+
