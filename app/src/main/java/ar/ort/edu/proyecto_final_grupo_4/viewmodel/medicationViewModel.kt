@@ -34,7 +34,7 @@ class MedicationViewModel @Inject constructor(
 
 ) : ViewModel() {
     private val _medications = MutableStateFlow<List<Medication>>(emptyList())
-    val medications: StateFlow<List<Medication>> = _medications
+    val medications = _medications.asStateFlow()
 
     private val _dosageUnits = MutableStateFlow<List<DosageUnit>>(emptyList())
     val dosageUnits: StateFlow<List<DosageUnit>> = _dosageUnits
