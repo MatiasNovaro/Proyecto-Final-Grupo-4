@@ -32,6 +32,8 @@ class MedicationViewModel @Inject constructor(
     private val scheduleRepository: ScheduleRepository,
     private val dayOfWeekRepository: DayOfWeekRepository
 
+
+
 ) : ViewModel() {
     private val _medications = MutableStateFlow<List<Medication>>(emptyList())
     val medications: StateFlow<List<Medication>> = _medications
@@ -40,6 +42,10 @@ class MedicationViewModel @Inject constructor(
     val dosageUnits: StateFlow<List<DosageUnit>> = _dosageUnits
     private val _showErrorDialog = MutableStateFlow(false)
     val showErrorDialog = _showErrorDialog.asStateFlow()
+
+    private val _selectedMedication = MutableStateFlow<Medication?>(null)
+    val selectedMedication: StateFlow<Medication?> = _selectedMedication.asStateFlow()
+
 
 
     fun loadMedications(userId: Int) {
@@ -52,6 +58,17 @@ class MedicationViewModel @Inject constructor(
         viewModelScope.launch {
             medicationRepository.insertMedication(medication)
             loadMedications(medication.userID)
+        }
+    }
+
+    fun getMedicationById(id: Long) {
+        viewModelScope.launch {
+            try {
+                val medication = medicationRepository.getById(id)
+                _selectedMedication.value = medication
+            } catch (e: Exception) {
+                Log.e("MedicationViewModel", "Error getting medication by ID", e)
+            }
         }
     }
 

@@ -42,6 +42,10 @@ class ScheduleViewModel @Inject constructor(
     private val _historySchedules = MutableStateFlow<List<ScheduleHistoryItem>>(emptyList())
     val historySchedules: StateFlow<List<ScheduleHistoryItem>> = _historySchedules
 
+    suspend fun getScheduleByMedicationId(medId: Long): Schedule? {
+        return scheduleRepository.getScheduleById(medId)
+    }
+
     // Método anterior para compatibilidad
     fun addSchedule(schedule: Schedule) {
         viewModelScope.launch {

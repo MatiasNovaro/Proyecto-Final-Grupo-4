@@ -55,7 +55,8 @@ fun EditMedicationsScreen(
                         medicationViewModel.deleteMedication(medication)
                     },
                     onUpdate = {
-                        // to do
+                        navController.currentBackStackEntry?.savedStateHandle?.set("medication", medication)
+                        navController.navigate(Screens.UpdateMedications.screen)
                     }
                 )
                 Spacer(modifier = Modifier.height(8.dp))

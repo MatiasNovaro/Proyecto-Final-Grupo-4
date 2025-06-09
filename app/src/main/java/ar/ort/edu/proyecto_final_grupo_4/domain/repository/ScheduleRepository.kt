@@ -11,6 +11,7 @@ interface ScheduleRepository {
     suspend fun getAllSchedules(): List<Schedule>
     suspend fun getScheduleById(scheduleId: Long): Schedule?
 
+
     // Métodos adicionales que podrías necesitar
     suspend fun getActiveSchedules(): List<Schedule>
     suspend fun getSchedulesForToday(): List<Schedule>

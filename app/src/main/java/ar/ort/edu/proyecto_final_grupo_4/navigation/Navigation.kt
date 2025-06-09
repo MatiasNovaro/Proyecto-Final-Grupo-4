@@ -5,9 +5,11 @@ import androidx.navigation.NavHostController
 import androidx.compose.runtime.Composable
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.NavHost
+import ar.ort.edu.proyecto_final_grupo_4.domain.model.Medication
 import ar.ort.edu.proyecto_final_grupo_4.ui.screens.addMedication.AddMedicationScreen
 import ar.ort.edu.proyecto_final_grupo_4.ui.screens.homeDashboard.HomeScreen
 import ar.ort.edu.proyecto_final_grupo_4.ui.screens.editMedications.EditMedicationsScreen
+import ar.ort.edu.proyecto_final_grupo_4.ui.screens.editMedications.UpdateMedicationScreen
 import ar.ort.edu.proyecto_final_grupo_4.ui.screens.history.HistoryScreen
 
 @Composable
@@ -35,6 +37,17 @@ fun Navigation(navController: NavHostController, onDestinationChanged: (String) 
         }
         composable(route= Screens.History.screen) {
             HistoryScreen(navController= navController )
+        }
+        composable(route= Screens.UpdateMedications.screen) {
+            val medication = navController.previousBackStackEntry
+                ?.savedStateHandle
+                ?.get<Medication>("medication")
+            if (medication != null) {
+                UpdateMedicationScreen(
+                    navController = navController,
+                    medication = medication
+                )
+            }
         }
     }
 }
