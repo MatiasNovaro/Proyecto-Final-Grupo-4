@@ -3,6 +3,7 @@ package ar.ort.edu.proyecto_final_grupo_4.domain.model
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
+import java.io.Serializable
 
 @Entity(
     tableName = "medication",
@@ -28,4 +29,4 @@ data class Medication(
     val userID: Int,
     val dosageUnitID: Long,
     val dosage: String
-)
+): Serializable

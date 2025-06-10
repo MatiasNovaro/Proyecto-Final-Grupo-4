@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import ar.ort.edu.proyecto_final_grupo_4.navigation.Screens
 import ar.ort.edu.proyecto_final_grupo_4.viewmodel.MedicationViewModel
 import ar.ort.edu.proyecto_final_grupo_4.ui.components.EditMedicationsItem
 import ar.ort.edu.proyecto_final_grupo_4.viewmodel.ScheduleViewModel
@@ -69,7 +70,8 @@ fun EditMedicationsScreen(
                         medicationViewModel.deleteMedication(medication)
                     },
                     onUpdate = {
-                        navController.navigate("editMedication/${medication.medicationID}")
+                        navController.currentBackStackEntry?.savedStateHandle?.set("medication", medication)
+                        navController.navigate(Screens.UpdateMedication.screen)
                     }
                 )
                 Spacer(modifier = Modifier.height(8.dp))

@@ -21,7 +21,7 @@ fun Navigation(navController: NavHostController, onDestinationChanged: (String) 
                 Screens.AddMedication.screen -> onDestinationChanged("Agregar Medicación")
                 Screens.EditMedications.screen -> onDestinationChanged("")
                 Screens.History.screen -> onDestinationChanged("Historial")
-
+                Screens.UpdateMedication.screen -> onDestinationChanged("UpdateMedication")
             }
         }
     }
@@ -38,7 +38,7 @@ fun Navigation(navController: NavHostController, onDestinationChanged: (String) 
         composable(route= Screens.History.screen) {
             HistoryScreen(navController= navController )
         }
-        composable(route= Screens.UpdateMedications.screen) {
+        composable(route= Screens.UpdateMedication.screen) {
             val medication = navController.previousBackStackEntry
                 ?.savedStateHandle
                 ?.get<Medication>("medication")

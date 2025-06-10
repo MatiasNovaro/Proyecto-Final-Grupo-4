@@ -47,11 +47,6 @@ fun UpdateMedicationScreen(navController: NavController, medication: Medication)
     val user by userVM.user.collectAsState()
     val units by medVM.dosageUnits.collectAsState()
 
-    val theSchedule = remember { mutableStateOf<Schedule?>(null) }
-    LaunchedEffect(medication.medicationID) {
-        theSchedule.value = scheduleVM.getScheduleByMedicationId(medication.medicationID)
-    }
-
 
     var name by remember { mutableStateOf(medication.name) }
     var dosis by remember { mutableStateOf(medication.dosage) }
