@@ -31,6 +31,12 @@ class MainActivity : FragmentActivity() {
 
                 val navController = rememberNavController()
                 val currentTitle = remember { mutableStateOf("Home") }
+
+                val scheduleId = intent?.getLongExtra("scheduleId", -1) ?: -1
+                val fromAlarm = intent?.getBooleanExtra("fromAlarm", false) ?: false
+                if (fromAlarm && scheduleId != -1L) {
+                    navController.navigate("confirmMedication/$scheduleId")
+                }
                 Scaffold(modifier = Modifier.fillMaxSize(),
                     topBar = {
                         CustomTopBar(
