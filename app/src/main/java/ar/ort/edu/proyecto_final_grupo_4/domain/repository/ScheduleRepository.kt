@@ -15,4 +15,5 @@ interface ScheduleRepository {
     suspend fun getActiveSchedules(): List<Schedule>
     suspend fun getSchedulesForToday(): List<Schedule>
     suspend fun getSchedulesWithMedication(): List<ScheduleWithDetails>
+    suspend fun deleteSchedulesForMedication(medicationId: Long)
 }

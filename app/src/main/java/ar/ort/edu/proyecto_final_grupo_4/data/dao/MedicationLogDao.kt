@@ -16,4 +16,15 @@ interface MedicationLogDao {
 
     @Query("SELECT * FROM medication_log ORDER BY wasTaken DESC")
     suspend fun getAllLogs(): List<MedicationLog>
+
+
+    @Query("""
+        SELECT ml.* 
+        FROM medication_log ml 
+        INNER JOIN schedule s ON ml.scheduleID = s.scheduleID 
+        WHERE s.medicationID = :medicationId
+    """)
+    suspend fun getMedicationLogs(medicationId: Long): List<MedicationLog>
+
+
 }
