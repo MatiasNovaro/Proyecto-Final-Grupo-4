@@ -7,6 +7,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.NavHost
 import ar.ort.edu.proyecto_final_grupo_4.ui.screens.addMedication.AddMedicationScreen
 import ar.ort.edu.proyecto_final_grupo_4.ui.screens.homeDashboard.HomeScreen
+import ar.ort.edu.proyecto_final_grupo_4.ui.screens.login.LoginScreen
+import ar.ort.edu.proyecto_final_grupo_4.ui.screens.login.RegisterScreen
 
 @Composable
 fun Navigation(navController: NavHostController, onDestinationChanged: (String) -> Unit){
@@ -18,12 +20,18 @@ fun Navigation(navController: NavHostController, onDestinationChanged: (String) 
             }
         }
     }
-    NavHost(navController = navController, startDestination = Screens.Home.screen){
+    NavHost(navController = navController, startDestination = Screens.LoginScreen.screen){
         composable(route= Screens.Home.screen){
             HomeScreen(navController= navController )
         }
         composable(route= Screens.AddMedication.screen){
             AddMedicationScreen(navController= navController )
+        }
+        composable(route= Screens.LoginScreen.screen){
+            LoginScreen(navController= navController )
+        }
+        composable(route= Screens.RegisterScreen.screen){
+            RegisterScreen(navController= navController )
         }
     }
 }
