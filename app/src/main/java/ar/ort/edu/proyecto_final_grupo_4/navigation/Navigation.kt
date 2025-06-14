@@ -7,12 +7,15 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.NavHost
 import ar.ort.edu.proyecto_final_grupo_4.ui.screens.addMedication.AddMedicationScreen
 import ar.ort.edu.proyecto_final_grupo_4.ui.screens.homeDashboard.HomeScreen
+import ar.ort.edu.proyecto_final_grupo_4.ui.screens.login.LoginScreen
+import ar.ort.edu.proyecto_final_grupo_4.ui.screens.login.RegisterScreen
+import ar.ort.edu.proyecto_final_grupo_4.viewmodel.AuthViewModel
 import android.content.Intent
 import ar.ort.edu.proyecto_final_grupo_4.ui.screens.editMedications.EditMedicationsScreen
 import ar.ort.edu.proyecto_final_grupo_4.ui.screens.history.HistoryScreen
 
 @Composable
-fun Navigation(navController: NavHostController, onDestinationChanged: (String) -> Unit){
+fun Navigation(navController: NavHostController, onDestinationChanged: (String) -> Unit, authViewModel: AuthViewModel){
     LaunchedEffect(navController) {
         navController.currentBackStackEntryFlow.collect { backStackEntry ->
             when (backStackEntry.destination.route) {
@@ -24,13 +27,19 @@ fun Navigation(navController: NavHostController, onDestinationChanged: (String) 
             }
         }
     }
-    NavHost(navController = navController, startDestination = Screens.Home.screen){
+    NavHost(navController = navController,
+        startDestination = if (authViewModel.isUserLoggedIn()) Screens.Home.screen else Screens.LoginScreen.screen){
         composable(route= Screens.Home.screen){
             HomeScreen(navController= navController )
         }
         composable(route= Screens.AddMedication.screen){
             AddMedicationScreen(navController= navController )
         }
+        composable(route= Screens.LoginScreen.screen){
+            LoginScreen(navController= navController )
+        }
+        composable(route= Screens.RegisterScreen.screen){
+            RegisterScreen(navController= navController )
         composable("confirmMedication/{scheduleId}") { backStackEntry ->
             val scheduleId = backStackEntry.arguments?.getString("scheduleId")?.toLong() ?: return@composable
             //ConfirmMedicationScreen(scheduleId = scheduleId)
