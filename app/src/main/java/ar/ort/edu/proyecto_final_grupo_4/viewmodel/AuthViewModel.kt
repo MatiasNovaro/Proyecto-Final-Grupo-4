@@ -15,7 +15,8 @@ data class AuthState(
     val isLoading: Boolean = false,
     val user: FirebaseUser? = null,
     val error: String? = null,
-    val isSuccess: Boolean = false
+    val isSuccess: Boolean = false,
+    val isAuthInitialized: Boolean = false
 )
 
 class AuthViewModel : ViewModel() {
@@ -24,8 +25,31 @@ class AuthViewModel : ViewModel() {
     private val _authState = MutableStateFlow(AuthState())
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
 
+
+    private val authStateListener = FirebaseAuth.AuthStateListener { firebaseAuth ->
+        val currentUser = firebaseAuth.currentUser
+        _authState.value = _authState.value.copy(
+            user = currentUser,
+            isAuthInitialized = true,
+            isSuccess = if (currentUser != null && !_authState.value.isLoading) true else _authState.value.isSuccess
+        )
+    }
+
     init {
-        _authState.value = _authState.value.copy(user = auth.currentUser)
+        auth.addAuthStateListener(authStateListener)
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        auth.removeAuthStateListener(authStateListener)
+    }
+
+    fun isUserLoggedIn(): Boolean {
+        return auth.currentUser != null
+    }
+
+    fun getCurrentUser(): FirebaseUser? {
+        return auth.currentUser
     }
 
     fun signIn(email: String, password: String) {
@@ -117,7 +141,11 @@ class AuthViewModel : ViewModel() {
     fun signOut() {
         try {
             auth.signOut()
-            _authState.value = AuthState()
+            // El AuthStateListener se encargará de actualizar el estado automáticamente
+            _authState.value = _authState.value.copy(
+                isSuccess = false,
+                error = null
+            )
         } catch (e: Exception) {
             _authState.value = _authState.value.copy(
                 error = "Error al cerrar sesión"

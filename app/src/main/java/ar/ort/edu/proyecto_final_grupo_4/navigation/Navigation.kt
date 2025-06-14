@@ -9,9 +9,10 @@ import ar.ort.edu.proyecto_final_grupo_4.ui.screens.addMedication.AddMedicationS
 import ar.ort.edu.proyecto_final_grupo_4.ui.screens.homeDashboard.HomeScreen
 import ar.ort.edu.proyecto_final_grupo_4.ui.screens.login.LoginScreen
 import ar.ort.edu.proyecto_final_grupo_4.ui.screens.login.RegisterScreen
+import ar.ort.edu.proyecto_final_grupo_4.viewmodel.AuthViewModel
 
 @Composable
-fun Navigation(navController: NavHostController, onDestinationChanged: (String) -> Unit){
+fun Navigation(navController: NavHostController, onDestinationChanged: (String) -> Unit, authViewModel: AuthViewModel){
     LaunchedEffect(navController) {
         navController.currentBackStackEntryFlow.collect { backStackEntry ->
             when (backStackEntry.destination.route) {
@@ -20,7 +21,8 @@ fun Navigation(navController: NavHostController, onDestinationChanged: (String) 
             }
         }
     }
-    NavHost(navController = navController, startDestination = Screens.LoginScreen.screen){
+    NavHost(navController = navController,
+        startDestination = if (authViewModel.isUserLoggedIn()) Screens.Home.screen else Screens.LoginScreen.screen){
         composable(route= Screens.Home.screen){
             HomeScreen(navController= navController )
         }
