@@ -23,4 +23,8 @@ interface ScheduleDao {
 
     @Query("SELECT * FROM schedule")
     suspend fun getAllSchedules(): List<Schedule>
+
+    @Query("DELETE FROM schedule WHERE medicationId = :medicationId")
+    suspend fun deleteByMedicationId(medicationId: Long)
+
 }

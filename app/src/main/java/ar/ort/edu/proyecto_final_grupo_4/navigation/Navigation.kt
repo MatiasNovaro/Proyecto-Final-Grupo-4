@@ -10,6 +10,9 @@ import ar.ort.edu.proyecto_final_grupo_4.ui.screens.homeDashboard.HomeScreen
 import ar.ort.edu.proyecto_final_grupo_4.ui.screens.login.LoginScreen
 import ar.ort.edu.proyecto_final_grupo_4.ui.screens.login.RegisterScreen
 import ar.ort.edu.proyecto_final_grupo_4.viewmodel.AuthViewModel
+import android.content.Intent
+import ar.ort.edu.proyecto_final_grupo_4.ui.screens.editMedications.EditMedicationsScreen
+import ar.ort.edu.proyecto_final_grupo_4.ui.screens.history.HistoryScreen
 
 @Composable
 fun Navigation(navController: NavHostController, onDestinationChanged: (String) -> Unit, authViewModel: AuthViewModel){
@@ -18,6 +21,9 @@ fun Navigation(navController: NavHostController, onDestinationChanged: (String) 
             when (backStackEntry.destination.route) {
                 Screens.Home.screen -> onDestinationChanged("Home")
                 Screens.AddMedication.screen -> onDestinationChanged("Agregar Medicación")
+                Screens.EditMedications.screen -> onDestinationChanged("")
+                Screens.History.screen -> onDestinationChanged("Historial")
+
             }
         }
     }
@@ -34,6 +40,15 @@ fun Navigation(navController: NavHostController, onDestinationChanged: (String) 
         }
         composable(route= Screens.RegisterScreen.screen){
             RegisterScreen(navController= navController )
+        composable("confirmMedication/{scheduleId}") { backStackEntry ->
+            val scheduleId = backStackEntry.arguments?.getString("scheduleId")?.toLong() ?: return@composable
+            //ConfirmMedicationScreen(scheduleId = scheduleId)
+        composable(route= Screens.EditMedications.screen) {
+            EditMedicationsScreen(navController)
+        }
+        composable(route= Screens.History.screen) {
+            HistoryScreen(navController= navController )
         }
     }
 }
+
