@@ -22,6 +22,8 @@ import ar.ort.edu.proyecto_final_grupo_4.ui.components.BottomNavigationBar
 import ar.ort.edu.proyecto_final_grupo_4.ui.components.CustomTopBar
 import androidx.fragment.app.FragmentActivity
 import ar.ort.edu.proyecto_final_grupo_4.ui.theme.ProyectoFinalGrupo4Theme
+import ar.ort.edu.proyecto_final_grupo_4.viewmodel.AuthViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel // Agregar este import
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -32,6 +34,8 @@ class MainActivity : FragmentActivity() {
         setContent {
             ProyectoFinalGrupo4Theme {
 
+                // Crear el AuthViewModel aquí
+                val authViewModel: AuthViewModel = viewModel()
                 val navController = rememberNavController()
                 val currentTitle = remember { mutableStateOf("Home") }
 
@@ -57,11 +61,11 @@ class MainActivity : FragmentActivity() {
                             .padding(innerPadding)
                             .fillMaxSize(),
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        //verticalArrangement = Arrangement.Center
                     ) {
                         Navigation(
                             onDestinationChanged = { title -> currentTitle.value = title },
-                            navController = navController
+                            navController = navController,
+                            authViewModel = authViewModel
                         )
                     }
                 }

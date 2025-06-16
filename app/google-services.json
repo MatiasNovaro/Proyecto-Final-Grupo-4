@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "632146594300",
+    "project_id": "proyecto-final-ort-tp3",
+    "storage_bucket": "proyecto-final-ort-tp3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:632146594300:android:1ca5f1f2675010fb4a4a79",
+        "android_client_info": {
+          "package_name": "ar.ort.edu.proyecto_final_grupo_4"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDjh9gG8zEHVMMv1f9R8bnjaf-pb2wQk4E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
