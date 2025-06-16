@@ -21,12 +21,12 @@ class AlarmCalculartorService {
 
                 while (currentDate <= endDate) {
                     val alarmTime = LocalDateTime.of(currentDate, schedule.startTime)
+                    // Only add future alarms
                     if (alarmTime.isAfter(now)) {
                         alarms.add(alarmTime)
                     }
                     currentDate = currentDate.plusDays(1)
 
-                    // Limitar a próximas 50 alarmas para evitar sobrecarga
                     if (alarms.size >= 50) break
                 }
             }
@@ -34,13 +34,19 @@ class AlarmCalculartorService {
             FrequencyType.HOURS_INTERVAL -> {
                 schedule.intervalValue?.let { hours ->
                     var nextAlarm = LocalDateTime.of(today, schedule.startTime)
+
+                    // If the initial time is in the past, calculate the next occurrence
                     if (nextAlarm.isBefore(now)) {
-                        nextAlarm = nextAlarm.plusHours(((now.hour - schedule.startTime.hour) / hours + 1) * hours.toLong())
+                        val hoursPassedToday = Duration.between(nextAlarm, now).toHours()
+                        val intervalsToAdd = (hoursPassedToday / hours) + 1
+                        nextAlarm = nextAlarm.plusHours(intervalsToAdd * hours)
                     }
 
-                    repeat(50) { // Próximas 50 alarmas
+                    repeat(3) {
                         if (schedule.endDate == null || nextAlarm.toLocalDate() <= schedule.endDate) {
-                            alarms.add(nextAlarm)
+                            if (nextAlarm.isAfter(now)) { // Double-check it's in the future
+                                alarms.add(nextAlarm)
+                            }
                             nextAlarm = nextAlarm.plusHours(hours.toLong())
                         }
                     }
@@ -62,6 +68,7 @@ class AlarmCalculartorService {
                                 currentDate,
                                 startTime.plusMinutes(intervalMinutes * index)
                             )
+                            // Only add future alarms
                             if (alarmTime.isAfter(now)) {
                                 alarms.add(alarmTime)
                             }

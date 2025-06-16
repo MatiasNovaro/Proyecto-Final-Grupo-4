@@ -14,6 +14,7 @@ import ar.ort.edu.proyecto_final_grupo_4.domain.repository.MedicationRepository
 import ar.ort.edu.proyecto_final_grupo_4.domain.repository.ScheduleRepository
 import ar.ort.edu.proyecto_final_grupo_4.domain.utils.FrequencyOption
 import ar.ort.edu.proyecto_final_grupo_4.domain.utils.FrequencyType
+import ar.ort.edu.proyecto_final_grupo_4.services.MedicationSchedulerService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -30,7 +31,8 @@ class MedicationViewModel @Inject constructor(
     private val dosageUnitRepository: DosageUnitRepository,
     private val medicationLogRepository: MedicationLogRepository,
     private val scheduleRepository: ScheduleRepository,
-    private val dayOfWeekRepository: DayOfWeekRepository
+    private val dayOfWeekRepository: DayOfWeekRepository,
+    private val schedulerService: MedicationSchedulerService
 
 ) : ViewModel() {
     private val _medications = MutableStateFlow<List<Medication>>(emptyList())
@@ -41,37 +43,14 @@ class MedicationViewModel @Inject constructor(
     private val _showErrorDialog = MutableStateFlow(false)
     val showErrorDialog = _showErrorDialog.asStateFlow()
 
-
+    fun programAlarm(scheduleId: Long) {
+        viewModelScope.launch {
+            schedulerService.rescheduleMedication(scheduleId)
+        }
+    }
     fun loadMedications(userId: Int) {
         viewModelScope.launch {
             _medications.value = medicationRepository.getMedicationsByUser(userId)
-        }
-    }
-
-    fun addMedication(medication: Medication) {
-        viewModelScope.launch {
-            medicationRepository.insertMedication(medication)
-            loadMedications(medication.userID)
-        }
-    }
-
-    // Método anterior para compatibilidad
-    fun addMedicationWithSchedule(
-        medication: Medication,
-        time: LocalTime,
-        scheduleViewModel: ScheduleViewModel
-    ) {
-        viewModelScope.launch {
-            val medicationId = insertMedicationAndReturnId(medication)
-            val schedule = Schedule(
-                scheduleID = 0,
-                medicationID = medicationId,
-                frequencyType = FrequencyType.DAILY, // Por defecto diario
-                startTime = time,
-                isActive = true
-            )
-            scheduleViewModel.addSchedule(schedule)
-            loadMedications(medication.userID)
         }
     }
 
@@ -80,13 +59,15 @@ class MedicationViewModel @Inject constructor(
         frequency: FrequencyOption,
         startTime: LocalTime,
         selectedWeekDays: List<Int>,
-        scheduleVM: ScheduleViewModel
+        scheduleVM: ScheduleViewModel,
     ) {
         viewModelScope.launch {
             try {
+                // 1. Insertar medicamento
                 val medicationId = insertMedicationAndReturnId(medication)
 
-                val schedule = Schedule(
+                // 2. Crear primer horario base
+                val baseSchedule = Schedule(
                     scheduleID = 0,
                     medicationID = medicationId,
                     frequencyType = frequency.frequencyType,
@@ -97,29 +78,51 @@ class MedicationViewModel @Inject constructor(
                     startDate = LocalDate.now()
                 )
 
-                val scheduleId = scheduleVM.addScheduleAndReturnId(schedule)
+                val baseScheduleId = scheduleVM.addScheduleAndReturnId(baseSchedule)
 
-                if (frequency.frequencyType == FrequencyType.WEEKLY && selectedWeekDays.isNotEmpty()) {
-                    scheduleVM.addWeekDays(scheduleId, selectedWeekDays)
-                } else if (frequency.frequencyType == FrequencyType.DAILY) {
-                    scheduleVM.addWeekDays(scheduleId, (0..6).toList())
+                // 3. Agregar días de la semana
+                when (frequency.frequencyType) {
+                    FrequencyType.WEEKLY -> {
+                        if (selectedWeekDays.isNotEmpty()) {
+                            scheduleVM.addWeekDays(baseScheduleId, selectedWeekDays)
+                        }
+                    }
+                    FrequencyType.DAILY -> {
+                        scheduleVM.addWeekDays(baseScheduleId, (0..6).toList())
+                    }
+                    else -> { /* nada que agregar */ }
                 }
 
+                schedulerService.rescheduleMedication(baseScheduleId)
+
+                // 5. Generar horarios adicionales (si corresponde)
                 val additionalTimes = generateAdditionalTimes(frequency, startTime)
-                additionalTimes.forEach { time ->
-                    val additionalSchedule = schedule.copy(
+
+                for (time in additionalTimes) {
+                    val additionalSchedule = baseSchedule.copy(
                         scheduleID = 0,
                         startTime = time
                     )
                     val additionalScheduleId = scheduleVM.addScheduleAndReturnId(additionalSchedule)
 
-                    if (frequency.frequencyType == FrequencyType.WEEKLY && selectedWeekDays.isNotEmpty()) {
-                        scheduleVM.addWeekDays(additionalScheduleId, selectedWeekDays)
-                    } else if (frequency.frequencyType == FrequencyType.DAILY) {
-                        scheduleVM.addWeekDays(additionalScheduleId, (0..6).toList())
+                    // Repetimos días de la semana para horarios extra
+                    when (frequency.frequencyType) {
+                        FrequencyType.WEEKLY -> {
+                            if (selectedWeekDays.isNotEmpty()) {
+                                scheduleVM.addWeekDays(additionalScheduleId, selectedWeekDays)
+                            }
+                        }
+                        FrequencyType.DAILY -> {
+                            scheduleVM.addWeekDays(additionalScheduleId, (0..6).toList())
+                        }
+                        else -> { /* nada */ }
                     }
+
+                    // Programar la alarma también
+                    schedulerService.rescheduleMedication(additionalScheduleId)
                 }
 
+                // 6. Actualizar UI si es necesario
                 loadMedications(medication.userID)
 
             } catch (e: Exception) {
@@ -127,6 +130,7 @@ class MedicationViewModel @Inject constructor(
             }
         }
     }
+
 
     private fun calculateEndTime(frequency: FrequencyOption, startTime: LocalTime): LocalTime? {
         return when (frequency.frequencyType) {
@@ -197,18 +201,6 @@ class MedicationViewModel @Inject constructor(
     fun loadDosageUnits() {
         viewModelScope.launch {
             _dosageUnits.value = dosageUnitRepository.getAllUnits()
-        }
-    }
-
-    fun addDosageUnit(unit: DosageUnit) {
-        viewModelScope.launch {
-            try {
-                val savedUnitId = dosageUnitRepository.insertUnit(unit)
-                val savedUnit = unit.copy(dosageUnitID = savedUnitId)
-                _dosageUnits.value += savedUnit
-            } catch (e: Exception) {
-                Log.e("MedicationViewModel", "Error adding dosage unit", e)
-            }
         }
     }
 

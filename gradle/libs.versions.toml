@@ -14,7 +14,8 @@ navigationComposeJvmstubs = "2.9.0"
 adapters = "3.2.0-alpha11"
 hilt = "2.51.1"  # Use consistent Hilt version
 ksp = "2.0.21-1.0.27"
-media3CommonKtx = "1.7.1"  # Add KSP version
+media3CommonKtx = "1.7.1"
+kotlinxDatetime = "0.6.2"  # Add KSP version
 
 
 [libraries]
@@ -42,6 +43,7 @@ kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-c
 hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
 hilt-compiler = { module = "com.google.dagger:hilt-compiler", version.ref = "hilt" }
 androidx-media3-common-ktx = { group = "androidx.media3", name = "media3-common-ktx", version.ref = "media3CommonKtx" }
+kotlinx-datetime = { group = "org.jetbrains.kotlinx", name = "kotlinx-datetime", version.ref = "kotlinxDatetime" }
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }

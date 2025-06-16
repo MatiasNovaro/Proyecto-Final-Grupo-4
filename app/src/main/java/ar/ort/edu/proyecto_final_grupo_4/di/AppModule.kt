@@ -22,6 +22,9 @@ import ar.ort.edu.proyecto_final_grupo_4.domain.repository.MedicationLogReposito
 import ar.ort.edu.proyecto_final_grupo_4.domain.repository.MedicationRepository
 import ar.ort.edu.proyecto_final_grupo_4.domain.repository.ScheduleRepository
 import ar.ort.edu.proyecto_final_grupo_4.domain.repository.UserRepository
+import ar.ort.edu.proyecto_final_grupo_4.services.AlarmCalculartorService
+import ar.ort.edu.proyecto_final_grupo_4.services.MedicationAlarmManager
+import ar.ort.edu.proyecto_final_grupo_4.services.MedicationSchedulerService
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -95,4 +98,31 @@ class AppModule {
         dosageUnitDao: DosageUnitDao
     ): DosageUnitRepository = DosageUnitRepositoryImpl(dosageUnitDao = dosageUnitDao)
 
+    @Provides
+    fun provideMedicationSchedulerService(
+        scheduleRepository: ScheduleRepository,
+        medicationRepository: MedicationRepository,
+        medicationLogRepository: MedicationLogRepository,
+        dosageUnitRepository: DosageUnitRepository,
+        alarmCalculator: AlarmCalculartorService,
+        alarmManager: MedicationAlarmManager,
+        @ApplicationContext context: Context
+    ): MedicationSchedulerService {
+        return MedicationSchedulerService(
+            scheduleRepository,
+            medicationRepository,
+            medicationLogRepository,
+            dosageUnitRepository,
+            alarmCalculator,
+            alarmManager,
+            context
+        )
+    }
+    @Provides
+    fun provideAlarmCalculatorService(): AlarmCalculartorService = AlarmCalculartorService()
+
+    @Provides
+    fun provideMedicationAlarmManager(@ApplicationContext context: Context): MedicationAlarmManager {
+        return MedicationAlarmManager(context)
+    }
 }

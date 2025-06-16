@@ -67,7 +67,9 @@ class MedicationSchedulerService(
                     medication?.let { med ->
                         val dosageUnit = dosageUnitRepository.getById(med.dosageUnitID)
                         scheduleAlarmsForMedication(sched, med, dosageUnit?.name ?: "")
+                        println("------Alarma agregada-----")
                     }
+
                 }
             }
         } catch (e: Exception) {
@@ -75,9 +77,9 @@ class MedicationSchedulerService(
         }
     }
 
-    suspend fun cancelMedicationAlarms(scheduleId: Long) {
-        alarmManager.cancelAlarm(scheduleId)
-    }
+//    suspend fun cancelMedicationAlarms(scheduleId: Long) {
+//        alarmManager.cancelAlarm(scheduleId)
+//    }
 
     suspend fun logMedicationTaken(scheduleId: Long) {
         try {

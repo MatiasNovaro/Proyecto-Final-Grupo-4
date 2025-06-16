@@ -12,7 +12,7 @@ import ar.ort.edu.proyecto_final_grupo_4.ui.screens.editMedications.EditMedicati
 import ar.ort.edu.proyecto_final_grupo_4.ui.screens.history.HistoryScreen
 
 @Composable
-fun Navigation(navController: NavHostController, onDestinationChanged: (String) -> Unit){
+fun Navigation(navController: NavHostController, onDestinationChanged: (String) -> Unit) {
     LaunchedEffect(navController) {
         navController.currentBackStackEntryFlow.collect { backStackEntry ->
             when (backStackEntry.destination.route) {
@@ -24,22 +24,25 @@ fun Navigation(navController: NavHostController, onDestinationChanged: (String) 
             }
         }
     }
-    NavHost(navController = navController, startDestination = Screens.Home.screen){
-        composable(route= Screens.Home.screen){
-            HomeScreen(navController= navController )
+    NavHost(navController = navController, startDestination = Screens.Home.screen) {
+        composable(route = Screens.Home.screen) {
+            HomeScreen(navController = navController)
         }
-        composable(route= Screens.AddMedication.screen){
-            AddMedicationScreen(navController= navController )
+        composable(route = Screens.AddMedication.screen) {
+            AddMedicationScreen(navController = navController)
         }
         composable("confirmMedication/{scheduleId}") { backStackEntry ->
-            val scheduleId = backStackEntry.arguments?.getString("scheduleId")?.toLong() ?: return@composable
-            //ConfirmMedicationScreen(scheduleId = scheduleId)
-        composable(route= Screens.EditMedications.screen) {
-            EditMedicationsScreen(navController)
+            val scheduleId =
+                backStackEntry.arguments?.getString("scheduleId")?.toLong() ?: return@composable
         }
-        composable(route= Screens.History.screen) {
-            HistoryScreen(navController= navController )
+            //ConfirmMedicationScreen(scheduleId = scheduleId)
+            composable(route = Screens.EditMedications.screen) {
+                EditMedicationsScreen(navController)
+            }
+            composable(route = Screens.History.screen) {
+                HistoryScreen(navController = navController)
+            }
         }
     }
-}
+
 
