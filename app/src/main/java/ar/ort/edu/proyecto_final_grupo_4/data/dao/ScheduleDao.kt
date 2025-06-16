@@ -27,4 +27,7 @@ interface ScheduleDao {
     @Query("DELETE FROM schedule WHERE medicationId = :medicationId")
     suspend fun deleteByMedicationId(medicationId: Long)
 
+    @Query("SELECT * FROM schedule WHERE isActive = 1")
+    suspend fun getActiveSchedules() : List<Schedule>
+
 }

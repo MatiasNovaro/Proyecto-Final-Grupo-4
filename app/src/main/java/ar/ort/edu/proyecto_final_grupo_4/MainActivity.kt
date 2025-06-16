@@ -1,6 +1,9 @@
 package ar.ort.edu.proyecto_final_grupo_4
 
+import android.content.Intent
+import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Column
@@ -38,6 +41,7 @@ class MainActivity : FragmentActivity() {
 
                 val scheduleId = intent?.getLongExtra("scheduleId", -1) ?: -1
                 val fromAlarm = intent?.getBooleanExtra("fromAlarm", false) ?: false
+
                 if (fromAlarm && scheduleId != -1L) {
                     navController.navigate("confirmMedication/$scheduleId")
                 }

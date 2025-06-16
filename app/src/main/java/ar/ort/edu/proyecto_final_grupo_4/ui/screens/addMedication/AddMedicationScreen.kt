@@ -126,7 +126,7 @@ fun AddMedicationScreen(navController: NavController) {
                                         frequency = frequency,
                                         startTime = time,
                                         selectedWeekDays = selectedWeekDays,
-                                        scheduleVM = scheduleVM
+                                        scheduleVM = scheduleVM,
                                     )
 
                                     // Mostrar el snackbar
