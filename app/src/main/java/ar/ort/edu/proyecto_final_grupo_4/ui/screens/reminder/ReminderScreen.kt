@@ -32,7 +32,12 @@ import ar.ort.edu.proyecto_final_grupo_4.viewmodel.ReminderViewModel
 
 
 @Composable
-fun ReminderScreen(navController:NavController,schedule: Schedule) {
+fun ReminderScreen(
+    navController: NavController,
+    schedule: Schedule,
+    scheduleIds: List<Long>,
+    fromNotification: Boolean
+) {
 
     val reminderViewModel: ReminderViewModel = hiltViewModel()
     LaunchedEffect(schedule) {

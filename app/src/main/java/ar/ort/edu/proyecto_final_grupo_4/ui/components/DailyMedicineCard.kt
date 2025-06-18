@@ -68,6 +68,7 @@ fun DailyMedicineCard(
                     .heightIn(max = maxHeight) // Máximo espacio visible
             ) {
                 items(medicines) { medicine ->
+                    println(medicine.isCompletedToday)
                     var status  = MedicineStatus.SUCCESS
                     if(!medicine.isCompletedToday) status = MedicineStatus.WARNING
                     val timeFormatted = medicine.nextDose?.toLocalTime()?.format(DateTimeFormatter.ofPattern("HH:mm"))

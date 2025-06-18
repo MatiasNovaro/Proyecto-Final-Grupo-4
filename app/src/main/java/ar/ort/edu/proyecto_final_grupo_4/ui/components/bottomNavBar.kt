@@ -65,6 +65,7 @@ fun BottomNavigationBar(
         )
 
         NavigationBarItem(
+
             icon = {
                 Icon(
                     Icons.Default.ExitToApp,
@@ -77,6 +78,7 @@ fun BottomNavigationBar(
                 authViewModel.signOut()
             },
             enabled = !authState.isLoading
+
         )
     }
 }

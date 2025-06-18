@@ -27,5 +27,6 @@ data class Schedule(
     val endTime: LocalTime? = null, // Para rango de horas (opcional)
     val isActive: Boolean = true,
     val startDate: LocalDate = LocalDate.now(),
-    val endDate: LocalDate? = null // Para tratamientos con fecha fin
+    val endDate: LocalDate? = null,// Para tratamientos con fecha fin
+    val status: MedicationStatus = MedicationStatus.PENDING
 )
