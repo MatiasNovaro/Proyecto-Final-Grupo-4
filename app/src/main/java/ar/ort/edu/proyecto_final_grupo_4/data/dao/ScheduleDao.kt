@@ -5,7 +5,10 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import ar.ort.edu.proyecto_final_grupo_4.domain.model.MedicationStatus
 import ar.ort.edu.proyecto_final_grupo_4.domain.model.Schedule
+import ar.ort.edu.proyecto_final_grupo_4.domain.model.ScheduleWithMedication
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ScheduleDao {
@@ -29,5 +32,12 @@ interface ScheduleDao {
 
     @Query("SELECT * FROM schedule WHERE isActive = 1")
     suspend fun getActiveSchedules() : List<Schedule>
+
+    @Query("SELECT * FROM schedule WHERE scheduleId IN (:scheduleIds)")
+    fun getSchedulesWithMedicationsByIds(scheduleIds: List<Long>): Flow<List<ScheduleWithMedication>>
+
+    @Query("UPDATE schedule SET status = :status WHERE scheduleId = :scheduleId")
+    suspend fun updateScheduleStatus(scheduleId: Long, status: MedicationStatus)
+
 
 }
