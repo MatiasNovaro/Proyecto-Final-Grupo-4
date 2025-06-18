@@ -13,14 +13,19 @@ import androidx.lifecycle.viewModelScope
 import ar.ort.edu.proyecto_final_grupo_4.domain.model.DayOfWeek
 import ar.ort.edu.proyecto_final_grupo_4.domain.model.DosageUnit
 import ar.ort.edu.proyecto_final_grupo_4.domain.model.Medication
+import ar.ort.edu.proyecto_final_grupo_4.domain.model.MedicationLog
+import ar.ort.edu.proyecto_final_grupo_4.domain.model.MedicationStatus
+import ar.ort.edu.proyecto_final_grupo_4.domain.model.ScheduleWithMedication
 import ar.ort.edu.proyecto_final_grupo_4.domain.repository.DosageUnitRepository
+import ar.ort.edu.proyecto_final_grupo_4.domain.repository.MedicationLogRepository
 import ar.ort.edu.proyecto_final_grupo_4.domain.repository.MedicationRepository
 import ar.ort.edu.proyecto_final_grupo_4.domain.utils.FrequencyType
-import ar.ort.edu.proyecto_final_grupo_4.ui.screens.history.ScheduleHistoryItem
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 
@@ -29,7 +34,8 @@ class ScheduleViewModel @Inject constructor(
     private val scheduleRepository: ScheduleRepository,
     private val dayOfWeekRepository: DayOfWeekRepository,
     private val medicationRepository: MedicationRepository,
-    private val dosageUnitRepository: DosageUnitRepository
+    private val dosageUnitRepository: DosageUnitRepository,
+    private val medicationlogRepository: MedicationLogRepository
 ) : ViewModel() {
 
     private val _schedules = MutableStateFlow<List<Schedule>>(emptyList())
@@ -38,9 +44,6 @@ class ScheduleViewModel @Inject constructor(
     private val _todaySchedules = MutableStateFlow<List<ScheduleWithDetails>>(emptyList())
     val todaySchedules: StateFlow<List<ScheduleWithDetails>> = _todaySchedules
 
-    // NUEVO: StateFlow para el historial
-    private val _historySchedules = MutableStateFlow<List<ScheduleHistoryItem>>(emptyList())
-    val historySchedules: StateFlow<List<ScheduleHistoryItem>> = _historySchedules
 
     // Método anterior para compatibilidad
     fun addSchedule(schedule: Schedule) {
@@ -49,7 +52,53 @@ class ScheduleViewModel @Inject constructor(
             loadSchedules() // Si tienes este método
         }
     }
+   suspend fun getMedicationsByScheduleIds(scheduleIds: List<Long>): Flow<List<ScheduleWithMedication>> {
+        return scheduleRepository.getSchedulesWithMedicationsByIds(scheduleIds)
+    }
+     fun getSchedulesWithMedications(scheduleIds: List<Long>): Flow<List<ScheduleWithMedication>> {
+        return scheduleRepository.getSchedulesWithMedicationsByIds(scheduleIds)
+    }
 
+    fun markAsTaken(scheduleId: Long) {
+        viewModelScope.launch {
+            // Update schedule status
+            scheduleRepository.updateScheduleStatus(scheduleId, MedicationStatus.TAKEN)
+
+            // Create and save a MedicationLog entry for "taken"
+            val medicationLog = MedicationLog(
+                scheduleID = scheduleId,
+                wasTaken = true,
+                timestamp = LocalDateTime.now() // Record the current time
+            )
+            medicationlogRepository.insertLog(medicationLog)
+
+            // You might want to also cancel the specific alarm here if not handled elsewhere
+            // Example: medicationAlarmManager.cancelAlarm(scheduleId)
+        }
+    }
+
+    fun markAsSkipped(scheduleId: Long) {
+        viewModelScope.launch {
+            // Update schedule status
+            scheduleRepository.updateScheduleStatus(scheduleId, MedicationStatus.SKIPPED)
+
+            // Create and save a MedicationLog entry for "skipped"
+            val medicationLog = MedicationLog(
+                scheduleID = scheduleId,
+                wasTaken = false,
+                timestamp = LocalDateTime.now() // Record the current time
+            )
+            medicationlogRepository.insertLog(medicationLog)
+        }
+    }
+    fun snoozeAlarm(scheduleId: Long, minutes: Int) {
+        viewModelScope.launch {
+            // Your existing snooze logic, which will reschedule the alarm
+            // (You'll need an instance of MedicationAlarmManager in ViewModel for this,
+            // or pass it via dependency injection)
+            // Example: medicationAlarmManager.snoozeAlarm(scheduleId, minutes)
+        }
+    }
     // Nuevo método que retorna el ID del schedule insertado
     suspend fun addScheduleAndReturnId(schedule: Schedule): Long {
         return scheduleRepository.insertSchedule(schedule)
@@ -93,7 +142,13 @@ class ScheduleViewModel @Inject constructor(
         viewModelScope.launch {
             val allSchedules = scheduleRepository.getAllSchedules()
             val today = LocalDate.now()
-            val dayOfWeek = today.dayOfWeek.value % 7 // Sunday = 0, Monday = 1, ...
+            val now = LocalDateTime.now() // Get current date and time
+
+            // Get the day of week using java.time.DayOfWeek.getValue() (1=Mon to 7=Sun)
+            val dayOfWeekJavaValue = today.dayOfWeek.value
+
+            // Convert to your schema: 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+            val currentDayOfWeekInt = if (dayOfWeekJavaValue == 7) 0 else dayOfWeekJavaValue
 
             val todaySchedules = mutableListOf<ScheduleWithDetails>()
 
@@ -101,100 +156,71 @@ class ScheduleViewModel @Inject constructor(
                 val isInDateRange = !schedule.startDate.isAfter(today) &&
                         (schedule.endDate == null || !today.isAfter(schedule.endDate))
 
-                val weekDays: List<DayOfWeek> =
-                    dayOfWeekRepository.getDaysForSchedule(schedule.scheduleID)
-                val weekDayInts = weekDays.map { it.dayOfWeek }
-                val isScheduledToday = when (schedule.frequencyType) {
+                if (!isInDateRange) continue
+
+                // Fetch the list of your Room DayOfWeek entities
+                val roomWeekDaysForSchedule: List<DayOfWeek> = dayOfWeekRepository.getDaysForSchedule(schedule.scheduleID)
+
+                // Extract the integer dayOfWeek values (0-6) from these entities
+                val storedWeekDayInts: List<Int> = roomWeekDaysForSchedule.map { it.dayOfWeek }
+
+                val isScheduledTodayBasedOnWeekDays = when (schedule.frequencyType) {
                     FrequencyType.DAILY,
                     FrequencyType.HOURS_INTERVAL,
                     FrequencyType.TIMES_PER_DAY,
                     FrequencyType.DAYS_INTERVAL,
                     FrequencyType.AS_NEEDED -> true
-                    FrequencyType.WEEKLY -> weekDayInts.contains(dayOfWeek)
+                    FrequencyType.WEEKLY -> storedWeekDayInts.contains(currentDayOfWeekInt) // Use the converted value here
+                    else -> false
                 }
 
-                if (isInDateRange && isScheduledToday) {
-                    val med = medicationRepository.getById(schedule.medicationID)
-                    val unit = med?.let { dosageUnitRepository.getById(it.dosageUnitID) }
-                    val nextTime = schedule.startTime.atDate(today)
-                    val isCompleted = false // implementar si querés tracking
+                if (!isScheduledTodayBasedOnWeekDays) continue
 
-                    if (med != null && unit != null) {
+                val med = medicationRepository.getById(schedule.medicationID)
+                val unit = med?.let { dosageUnitRepository.getById(it.dosageUnitID) }
+
+                if (med == null || unit == null) {
+                    Log.w("ScheduleVM", "Medication or DosageUnit missing for schedule ID: ${schedule.scheduleID}")
+                    continue
+                }
+
+                // Only use the specific startTime of THIS schedule entity for the current day
+                val potentialDosesForCurrentDay: List<LocalDateTime> = listOf(schedule.startTime.atDate(today))
+
+
+                for (doseTimeCandidate in potentialDosesForCurrentDay) {
+                    val logForThisDose = medicationlogRepository.getSpecificLogForScheduleAndExactTime(
+                        schedule.scheduleID,
+                        doseTimeCandidate
+                    )
+
+                    val wasDoseTaken = logForThisDose?.wasTaken == true
+                    println("Dentro dol view $wasDoseTaken")
+                    val isFutureDose = doseTimeCandidate.isAfter(now)
+                    val isCurrentlyDue = !doseTimeCandidate.isBefore(now.minusMinutes(1)) && doseTimeCandidate.isBefore(now.plusMinutes(15))
+                    // Define 'isPast' simply: if it's not future and not currently due, it's past.
+                    val isPast = !isFutureDose && !isCurrentlyDue
+
+
+                    // *** CRITICAL CHANGE: Include all relevant doses for the day, regardless of past taken status ***
+                    // We want to show:
+                    // 1. Future doses
+                    // 2. Currently due doses
+                    // 3. Any past doses (whether taken or not, so the user has a full overview)
+                    if (isFutureDose || isCurrentlyDue || isPast) {
                         val detail = ScheduleWithDetails(
                             schedule = schedule,
                             medication = med,
                             dosageUnit = unit,
-                            weekDays = weekDays,
-                            nextDose = nextTime,
-                            isCompletedToday = isCompleted
+                            weekDays = storedWeekDayInts,
+                            nextDose = doseTimeCandidate,
+                            isCompletedToday = wasDoseTaken // This flag will now correctly reflect if it was taken
                         )
-                        println(detail)
                         todaySchedules.add(detail)
                     }
                 }
             }
             _todaySchedules.value = todaySchedules.sortedBy { it.nextDose }
-        }
-    }
-
-    // NUEVO: Método para cargar el historial de medicamentos
-    fun loadHistorySchedules() {
-        viewModelScope.launch {
-            try {
-                val allSchedules = scheduleRepository.getAllSchedules()
-                val historyItems = mutableListOf<ScheduleHistoryItem>()
-                val today = LocalDate.now()
-
-                // Generar historial para los últimos 7 días
-                for (daysBack in 0..6) {
-                    val targetDate = today.minusDays(daysBack.toLong())
-                    val dayOfWeek = targetDate.dayOfWeek.value % 7
-
-                    for (schedule in allSchedules) {
-                        val isInDateRange = !schedule.startDate.isAfter(targetDate) &&
-                                (schedule.endDate == null || !targetDate.isAfter(schedule.endDate))
-
-                        val weekDays = dayOfWeekRepository.getDaysForSchedule(schedule.scheduleID)
-                        val weekDayInts = weekDays.map { it.dayOfWeek }
-
-                        val isScheduledThisDay = when (schedule.frequencyType) {
-                            FrequencyType.DAILY,
-                            FrequencyType.HOURS_INTERVAL,
-                            FrequencyType.TIMES_PER_DAY,
-                            FrequencyType.DAYS_INTERVAL,
-                            FrequencyType.AS_NEEDED -> true
-                            FrequencyType.WEEKLY -> weekDayInts.contains(dayOfWeek)
-                        }
-
-                        if (isInDateRange && isScheduledThisDay) {
-                            val medication = medicationRepository.getById(schedule.medicationID)
-                            val dosageUnit = medication?.let {
-                                dosageUnitRepository.getById(it.dosageUnitID)
-                            }
-
-                            if (medication != null && dosageUnit != null) {
-                                val historyItem = ScheduleHistoryItem(
-                                    id = "${schedule.scheduleID}_${targetDate}",
-                                    medicationName = medication.name,
-                                    dosage = "${medication.dosage} ${dosageUnit.name}",
-                                    time = schedule.startTime.format(DateTimeFormatter.ofPattern("HH:mm")),
-                                    isTaken = generateRandomTakenStatus(), // Por ahora random, después implementar tracking real
-                                    dayLabel = getDayLabel(targetDate, today)
-                                )
-                                historyItems.add(historyItem)
-                            }
-                        }
-                    }
-                }
-
-                _historySchedules.value = historyItems.sortedByDescending {
-                    LocalDate.parse(it.dayLabel.takeLastWhile { it.isDigit() || it == '/' || it == '-' }.ifEmpty { "2024-01-01" })
-                }.sortedBy { it.time }
-
-            } catch (e: Exception) {
-                Log.e("ScheduleViewModel", "Error loading history schedules", e)
-                _historySchedules.value = emptyList()
-            }
         }
     }
 
@@ -248,12 +274,13 @@ class ScheduleViewModel @Inject constructor(
     }
 }
 
+
 // Data class para mostrar información completa del schedule
 data class ScheduleWithDetails(
     val schedule: Schedule,
     val medication: Medication,
     val dosageUnit: DosageUnit,
-    val weekDays: List<DayOfWeek>,
+    val weekDays: List<Int>,
     val nextDose: LocalDateTime?,
     val isCompletedToday: Boolean = false
 )

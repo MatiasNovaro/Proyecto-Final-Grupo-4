@@ -1,9 +1,12 @@
 package ar.ort.edu.proyecto_final_grupo_4.data.repository
 
 import ar.ort.edu.proyecto_final_grupo_4.data.dao.ScheduleDao
+import ar.ort.edu.proyecto_final_grupo_4.domain.model.MedicationStatus
 import ar.ort.edu.proyecto_final_grupo_4.domain.model.Schedule
+import ar.ort.edu.proyecto_final_grupo_4.domain.model.ScheduleWithMedication
 import ar.ort.edu.proyecto_final_grupo_4.domain.repository.ScheduleRepository
 import ar.ort.edu.proyecto_final_grupo_4.viewmodel.ScheduleWithDetails
+import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
 class ScheduleRepositoryImpl @Inject constructor(
@@ -49,6 +52,13 @@ class ScheduleRepositoryImpl @Inject constructor(
 
     override suspend fun deleteSchedule(scheduleId: Long) {
         scheduleDao.deleteSchedule(scheduleId)
+    }
+    override fun getSchedulesWithMedicationsByIds(scheduleIds: List<Long>): Flow<List<ScheduleWithMedication>> {
+        return scheduleDao.getSchedulesWithMedicationsByIds(scheduleIds)
+    }
+
+    override suspend fun updateScheduleStatus(scheduleId: Long, status: MedicationStatus) {
+        scheduleDao.updateScheduleStatus(scheduleId, status)
     }
 }
 

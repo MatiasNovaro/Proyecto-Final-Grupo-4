@@ -16,6 +16,7 @@ import ar.ort.edu.proyecto_final_grupo_4.domain.utils.FrequencyOption
 import ar.ort.edu.proyecto_final_grupo_4.domain.utils.FrequencyType
 import ar.ort.edu.proyecto_final_grupo_4.services.MedicationSchedulerService
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -150,20 +151,40 @@ class MedicationViewModel @Inject constructor(
                 val times = frequency.intervalValue ?: 1
                 if (times <= 1) return emptyList()
 
-                val hoursInterval = 12 / (times - 1)
-                (1 until times).map { i ->
-                    startTime.plusHours((hoursInterval * i).toLong())
+                val hoursSpan = 12
+                val intervalForOtherDoses = if (times > 1) hoursSpan / (times - 1) else 0
+
+                (1 until times).mapNotNull { i ->
+                    val nextTime = startTime.plusHours((intervalForOtherDoses * i).toLong())
+                    // Ensure the generated time is after the initial start time, or 00:00 if it's the wrap-around point
+                    if (nextTime.isAfter(startTime) || (nextTime == LocalTime.MIDNIGHT && startTime != LocalTime.MIDNIGHT)) {
+                        nextTime
+                    } else {
+                        null
+                    }
                 }
             }
 
             FrequencyType.HOURS_INTERVAL -> {
-                val intervalHours = frequency.intervalValue ?: 24
-                if (intervalHours >= 24) return emptyList()
+                val intervalHours = frequency.intervalValue ?: 0
+                if (intervalHours <= 0 || intervalHours >= 24) return emptyList() // Guard against invalid intervals
 
-                val timesPerDay = 24 / intervalHours
-                (1 until timesPerDay).map { i ->
-                    startTime.plusHours((intervalHours * i).toLong())
-                }
+                val distinctDailyDoseTimes = mutableSetOf<LocalTime>()
+                var currentCycleTime = startTime // Start with the user's defined startTime
+
+                // Generate all dose times within a 24-hour cycle
+                // Start from 00:00 and add interval until we wrap around, ensuring all distinct times are captured.
+                // Or, more simply, just keep adding interval hours from the startTime until you loop back to startTime.
+                do {
+                    distinctDailyDoseTimes.add(currentCycleTime)
+                    currentCycleTime = currentCycleTime.plusHours(intervalHours.toLong())
+                } while (currentCycleTime != startTime) // Loop until we come back to the original start time
+
+                // Remove the original startTime from this list, as it's handled by baseSchedule
+                distinctDailyDoseTimes.remove(startTime)
+
+                // Sort them to maintain order (optional, but good for consistency)
+                return distinctDailyDoseTimes.sorted()
             }
 
             else -> emptyList()

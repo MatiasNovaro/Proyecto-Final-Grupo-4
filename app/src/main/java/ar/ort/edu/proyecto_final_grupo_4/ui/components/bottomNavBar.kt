@@ -45,5 +45,12 @@ fun BottomNavigationBar(navController: NavController) {
             selected = currentRoute == Screens.History.screen,
             onClick = { navController.navigate(Screens.History.screen) }
         )
+
+        NavigationBarItem(
+            icon = { Icon(Icons.Default.History , contentDescription = "Historial") },
+            label = { Text("Historial") },
+            selected = currentRoute == Screens.History.screen,
+            onClick = { navController.navigate(Screens.History.screen) }
+        )
     }
 }
