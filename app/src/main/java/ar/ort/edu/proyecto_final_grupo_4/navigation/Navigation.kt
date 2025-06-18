@@ -47,18 +47,18 @@ fun Navigation(navController: NavHostController, onDestinationChanged: (String) 
         }
         composable(route = Screens.RegisterScreen.screen) {
             RegisterScreen(navController = navController)
-        }
+            composable("confirmMedication/{scheduleId}") { backStackEntry ->
+                val scheduleId =
+                    backStackEntry.arguments?.getString("scheduleId")?.toLong() ?: return@composable
+            }
+            //ConfirmMedicationScreen(scheduleId = scheduleId)
+            composable(route = Screens.EditMedications.screen) {
+                EditMedicationsScreen(navController)
+            }
+            composable(route = Screens.History.screen) {
+                HistoryScreen(navController = navController)
+            }
 
-//        composable("confirmMedication/{scheduleId}") { backStackEntry ->
-//            val scheduleId =
-//                backStackEntry.arguments?.getString("scheduleId")?.toLong() ?: return@composable
-//        }
-        //ConfirmMedicationScreen(scheduleId = scheduleId)
-        composable(route = Screens.EditMedications.screen) {
-            EditMedicationsScreen(navController)
-        }
-        composable(route = Screens.History.screen) {
-            HistoryScreen(navController = navController)
         }
         composable(route = "medication_confirmation/{scheduleIds}/{fromNotification}",
             arguments = listOf(

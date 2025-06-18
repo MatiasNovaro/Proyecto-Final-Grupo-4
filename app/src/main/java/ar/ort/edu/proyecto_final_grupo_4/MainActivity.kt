@@ -81,7 +81,7 @@ class MainActivity : FragmentActivity() {
                         )
                     },
                     bottomBar = {
-                        BottomNavigationBar(navController = navController)
+                        BottomNavigationBar(navController = navController, authViewModel = authViewModel)
                     }
                 ) { innerPadding ->
                     Column(
