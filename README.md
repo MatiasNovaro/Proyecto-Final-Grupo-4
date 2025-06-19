@@ -1,4 +1,4 @@
-# 💊 App Medicamentos - Gestión de Medicación Android
+# 💊 MiMedicación - Gestión de Medicación Android
 
 Esta aplicación permite registrar medicamentos, programar horarios de toma y recibir **notificaciones/alarmas** cuando es el momento de tomar la medicación. Pensada para ayudar a usuarios a seguir sus tratamientos correctamente.
 
