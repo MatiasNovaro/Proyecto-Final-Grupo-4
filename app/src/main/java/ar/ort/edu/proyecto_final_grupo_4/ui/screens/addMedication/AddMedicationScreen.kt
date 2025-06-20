@@ -57,10 +57,22 @@ fun AddMedicationScreen(navController: NavController) {
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
+    var nameError by remember { mutableStateOf<String?>(null) }
+
     LaunchedEffect(Unit) {
         userVM.ensureDefaultUser()
         medVM.loadDosageUnits()
     }
+    LaunchedEffect(name) {
+        if (name.isNotBlank()) {
+            medVM.checkMedicationNameExists(name) { exists ->
+                nameError = if (exists) "Este medicamento ya existe" else null
+            }
+        } else {
+            nameError = null
+        }
+    }
+
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) }
@@ -80,7 +92,8 @@ fun AddMedicationScreen(navController: NavController) {
                 name = name,
                 onNameChange = { name = it },
                 dosis = dosis,
-                onDosisChange = { dosis = it }
+                onDosisChange = { dosis = it },
+                nameError = nameError
             )
 
             FrequencySelector(
@@ -107,7 +120,8 @@ fun AddMedicationScreen(navController: NavController) {
             )
 
             SaveButton(
-                enabled = name.isNotBlank() && dosis.isNotBlank() && selectedUnit != null &&
+                enabled = name.isNotBlank() && nameError == null &&
+                        dosis.isNotBlank() && selectedUnit != null &&
                         selectedTime != null && selectedFrequency != null,
                 onClick = {
                     user?.let { user ->
@@ -164,23 +178,38 @@ private fun MedicationBasicFields(
     name: String,
     onNameChange: (String) -> Unit,
     dosis: String,
-    onDosisChange: (String) -> Unit
+    onDosisChange: (String) -> Unit,
+    nameError: String?
 ) {
-    OutlinedTextField(
-        value = name,
-        onValueChange = onNameChange,
-        label = { Text("Nombre") },
-        placeholder = { Text("Ej. Paracetamol") },
-        modifier = Modifier.fillMaxWidth()
-    )
+    Column {
+        OutlinedTextField(
+            value = name,
+            onValueChange = onNameChange,
+            label = { Text("Nombre") },
+            placeholder = { Text("Ej. Paracetamol") },
+            modifier = Modifier.fillMaxWidth(),
+            isError = nameError != null,
+            singleLine = true
 
-    OutlinedTextField(
-        value = dosis,
-        onValueChange = onDosisChange,
-        label = { Text("Dosis") },
-        placeholder = { Text("Ej. 500 mg") },
-        modifier = Modifier.fillMaxWidth()
-    )
+        )
+
+        if (nameError != null) {
+            Text(
+                text = nameError,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.labelSmall
+            )
+        }
+
+        OutlinedTextField(
+            value = dosis,
+            onValueChange = onDosisChange,
+            label = { Text("Dosis") },
+            placeholder = { Text("Ej. 500 mg") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true
+        )
+    }
 }
 
 @Composable
