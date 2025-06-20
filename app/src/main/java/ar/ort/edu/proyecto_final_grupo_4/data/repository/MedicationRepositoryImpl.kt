@@ -38,5 +38,8 @@ class MedicationRepositoryImpl @Inject constructor(
     override suspend fun deleteMedication(medication: Medication) {
         medicationDao.deleteMedication(medication)
     }
+    override suspend fun existsByName(name: String): Boolean {
+        return medicationDao.existsByName(name)
+    }
 }
 
