@@ -1,4 +1,3 @@
-// app/src/main/java/ar.ort.edu.proyecto_final_grupo_4.ui.screens.history/HistoryScreen.kt
 package ar.ort.edu.proyecto_final_grupo_4.ui.screens.history
 
 import android.annotation.SuppressLint
@@ -11,7 +10,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.FilterList
@@ -32,53 +30,38 @@ import ar.ort.edu.proyecto_final_grupo_4.ui.theme.LightCream
 import ar.ort.edu.proyecto_final_grupo_4.ui.theme.PrimaryOrange
 import java.time.format.DateTimeFormatter
 import java.time.LocalDateTime
-import java.time.LocalDate
-import java.time.ZoneOffset // Import ZoneOffset for DatePicker conversion
+import java.time.ZoneOffset
+import ar.ort.edu.proyecto_final_grupo_4.ui.components.CustomTopBar
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HistoryScreen(navController: NavController) {
     val medicationLogViewModel: MedicationLogViewModel = hiltViewModel()
-    val historyLogs by medicationLogViewModel.historyLogs.collectAsState() // This now collects HistoryUiItem
+    val historyLogs by medicationLogViewModel.historyLogs.collectAsState()
 
     var showFilterOptions by remember { mutableStateOf(false) }
     var selectedFilterStatus by remember { mutableStateOf<Boolean?>(null) }
 
-    // Date picker states
     val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = null // Initialize with null for no selection
+        initialSelectedDateMillis = null
     )
     var showDatePicker by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = "Historial",
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Black
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+            CustomTopBar(
+                navController = navController,
+                actions = {
+                    IconButton(onClick = { showFilterOptions = !showFilterOptions }) {
                         Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Volver",
+                            imageVector = Icons.Default.FilterList,
+                            contentDescription = "Filtrar",
                             tint = Color.Black
                         )
                     }
                 },
-                actions = {
-                    IconButton(onClick = { showFilterOptions = !showFilterOptions }) {
-                        Icon(Icons.Default.FilterList, contentDescription = "Filtrar", tint = Color.Black)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = LightCream
-                )
+                backgroundColor = LightCream
             )
         }
     ) { paddingValues ->
@@ -89,10 +72,12 @@ fun HistoryScreen(navController: NavController) {
                 .padding(horizontal = 16.dp)
                 .padding(top = paddingValues.calculateTopPadding())
         ) {
-            // Filter Options UI
             if (showFilterOptions) {
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp).horizontalScroll(rememberScrollState()),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)
+                        .horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -130,13 +115,12 @@ fun HistoryScreen(navController: NavController) {
                         } else null
                     )
 
-                    // Date Picker Button
                     OutlinedButton(onClick = { showDatePicker = true }) {
                         Icon(Icons.Default.CalendarToday, contentDescription = "Seleccionar Fecha")
                         Spacer(Modifier.width(4.dp))
                         Text(
                             text = datePickerState.selectedDateMillis?.let {
-                                LocalDateTime.ofEpochSecond(it / 1000, 0, ZoneOffset.UTC) // Convert to local
+                                LocalDateTime.ofEpochSecond(it / 1000, 0, ZoneOffset.UTC)
                                     .toLocalDate()
                                     .format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
                             } ?: "Seleccionar Fecha",
@@ -153,7 +137,6 @@ fun HistoryScreen(navController: NavController) {
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    // Group the logs by dayLabel (computed in ViewModel)
                     val groupedLogs = historyLogs.groupBy { it.dayLabel }
 
                     items(groupedLogs.keys.toList()) { dayLabel ->
@@ -170,7 +153,6 @@ fun HistoryScreen(navController: NavController) {
         }
     }
 
-    // Date Picker Dialog
     if (showDatePicker) {
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
@@ -181,10 +163,10 @@ fun HistoryScreen(navController: NavController) {
                         val selectedLocalDate = LocalDateTime.ofEpochSecond(selectedMillis / 1000, 0, ZoneOffset.UTC).toLocalDate()
                         medicationLogViewModel.setFilterByDateRange(
                             selectedLocalDate.atStartOfDay(),
-                            selectedLocalDate.atTime(23, 59, 59, 999999999) // End of day
+                            selectedLocalDate.atTime(23, 59, 59, 999999999)
                         )
                     } else {
-                        medicationLogViewModel.setFilterByDateRange(null, null) // Clear date filter if nothing selected
+                        medicationLogViewModel.setFilterByDateRange(null, null)
                     }
                     showDatePicker = false
                 }) {
@@ -205,7 +187,7 @@ fun HistoryScreen(navController: NavController) {
 @Composable
 fun HistoryDaySection(
     dayLabel: String,
-    logs: List<HistoryYUiItem> // Changed to HistoryUiItem
+    logs: List<HistoryYUiItem>
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -233,8 +215,8 @@ fun HistoryDaySection(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            logs.forEach { log -> // Iterate over logs
-                HistoryMedicationLogItem(log = log) // Pass the log
+            logs.forEach { log ->
+                HistoryMedicationLogItem(log = log)
                 Spacer(modifier = Modifier.height(8.dp))
             }
         }
@@ -242,7 +224,7 @@ fun HistoryDaySection(
 }
 
 @Composable
-fun HistoryMedicationLogItem(log: HistoryYUiItem) { // Changed to HistoryUiItem
+fun HistoryMedicationLogItem(log: HistoryYUiItem) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -261,7 +243,7 @@ fun HistoryMedicationLogItem(log: HistoryYUiItem) { // Changed to HistoryUiItem
             Spacer(modifier = Modifier.width(12.dp))
 
             Text(
-                text = log.timestamp.format(DateTimeFormatter.ofPattern("HH:mm")), // Format time from timestamp
+                text = log.timestamp.format(DateTimeFormatter.ofPattern("HH:mm")),
                 fontSize = 14.sp,
                 color = Color.Gray,
                 modifier = Modifier.width(60.dp)
