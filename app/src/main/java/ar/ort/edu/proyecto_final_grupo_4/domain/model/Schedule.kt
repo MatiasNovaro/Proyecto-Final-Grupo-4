@@ -22,11 +22,11 @@ data class Schedule(
     val scheduleID: Long = 0,
     val medicationID: Long,
     val frequencyType: FrequencyType,
-    val intervalValue: Int? = null, // Para "cada X horas" o "cada X días" o "X veces al día"
-    val startTime: LocalTime, // Primera toma del día
-    val endTime: LocalTime? = null, // Para rango de horas (opcional)
+    val intervalValue: Int? = null,
+    val startTime: LocalTime,
+    val endTime: LocalTime? = null,
     val isActive: Boolean = true,
     val startDate: LocalDate = LocalDate.now(),
-    val endDate: LocalDate? = null,// Para tratamientos con fecha fin
+    val endDate: LocalDate? = null,
     val status: MedicationStatus = MedicationStatus.PENDING
 )

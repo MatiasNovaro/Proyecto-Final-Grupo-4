@@ -9,5 +9,5 @@ sealed class Screens(val screen: String) {
     data object RegisterScreen: Screens("RegisterScreen")
     data object Reminder: Screens("Reminder")
     data object EditMedications: Screens("EditMedications")
-
+    data object MedicationDetail : Screens("medication_details/{medicationId}")
 }

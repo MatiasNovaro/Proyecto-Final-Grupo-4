@@ -4,9 +4,9 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import ar.ort.edu.proyecto_final_grupo_4.domain.model.DosageUnit
+import ar.ort.edu.proyecto_final_grupo_4.domain.model.EditMedicationUiState
 import ar.ort.edu.proyecto_final_grupo_4.domain.model.Medication
 import ar.ort.edu.proyecto_final_grupo_4.domain.model.Schedule
-import ar.ort.edu.proyecto_final_grupo_4.domain.model.User
 import ar.ort.edu.proyecto_final_grupo_4.domain.repository.DayOfWeekRepository
 import ar.ort.edu.proyecto_final_grupo_4.domain.repository.DosageUnitRepository
 import ar.ort.edu.proyecto_final_grupo_4.domain.repository.MedicationLogRepository
@@ -14,9 +14,9 @@ import ar.ort.edu.proyecto_final_grupo_4.domain.repository.MedicationRepository
 import ar.ort.edu.proyecto_final_grupo_4.domain.repository.ScheduleRepository
 import ar.ort.edu.proyecto_final_grupo_4.domain.utils.FrequencyOption
 import ar.ort.edu.proyecto_final_grupo_4.domain.utils.FrequencyType
+import ar.ort.edu.proyecto_final_grupo_4.presentation.viewmodel.MedicationDetailEvent
 import ar.ort.edu.proyecto_final_grupo_4.services.MedicationSchedulerService
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -54,6 +54,7 @@ class MedicationViewModel @Inject constructor(
             _medications.value = medicationRepository.getMedicationsByUser(userId)
         }
     }
+
 
     fun addMedicationWithScheduleAndFrequency(
         medication: Medication,
@@ -172,18 +173,13 @@ class MedicationViewModel @Inject constructor(
                 val distinctDailyDoseTimes = mutableSetOf<LocalTime>()
                 var currentCycleTime = startTime // Start with the user's defined startTime
 
-                // Generate all dose times within a 24-hour cycle
-                // Start from 00:00 and add interval until we wrap around, ensuring all distinct times are captured.
-                // Or, more simply, just keep adding interval hours from the startTime until you loop back to startTime.
                 do {
                     distinctDailyDoseTimes.add(currentCycleTime)
                     currentCycleTime = currentCycleTime.plusHours(intervalHours.toLong())
-                } while (currentCycleTime != startTime) // Loop until we come back to the original start time
+                } while (currentCycleTime != startTime)
 
-                // Remove the original startTime from this list, as it's handled by baseSchedule
                 distinctDailyDoseTimes.remove(startTime)
 
-                // Sort them to maintain order (optional, but good for consistency)
                 return distinctDailyDoseTimes.sorted()
             }
 
@@ -195,7 +191,9 @@ class MedicationViewModel @Inject constructor(
         return medicationRepository.insertMedication(medication)
     }
 
-
+    suspend fun getScheduleByMedicationId(medicationId: Long): List<Schedule> {
+        return  scheduleRepository.getSchedulesForMedication(medicationId)
+    }
     fun deleteMedication(medication: Medication) {
         viewModelScope.launch {
             val logs = medicationLogRepository.getMedicationLogs(medication.medicationID)
@@ -231,15 +229,13 @@ class MedicationViewModel @Inject constructor(
                 val savedUnitId = dosageUnitRepository.insertUnit(unit)
                 val savedUnit = unit.copy(dosageUnitID = savedUnitId)
 
-                // Update your local state
                 _dosageUnits.value += savedUnit
 
-                // Call the callback with the saved unit
                 onSaved(savedUnit)
             } catch (e: Exception) {
-                // Handle error appropriately
                 Log.e("MedicationViewModel", "Error adding dosage unit", e)
             }
         }
     }
+
 }

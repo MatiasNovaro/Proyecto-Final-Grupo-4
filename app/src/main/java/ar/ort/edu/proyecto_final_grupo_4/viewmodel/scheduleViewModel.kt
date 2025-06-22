@@ -137,7 +137,6 @@ class ScheduleViewModel @Inject constructor(
         }
     }
 
-    // Método para obtener schedules de hoy
     fun loadTodaySchedules() {
         viewModelScope.launch {
             val allSchedules = scheduleRepository.getAllSchedules()
@@ -153,6 +152,10 @@ class ScheduleViewModel @Inject constructor(
             val todaySchedules = mutableListOf<ScheduleWithDetails>()
 
             for (schedule in allSchedules) {
+
+                if (!schedule.isActive) {
+                    continue // Skip this schedule if it's not active
+                }
                 val isInDateRange = !schedule.startDate.isAfter(today) &&
                         (schedule.endDate == null || !today.isAfter(schedule.endDate))
 
@@ -183,8 +186,6 @@ class ScheduleViewModel @Inject constructor(
                     Log.w("ScheduleVM", "Medication or DosageUnit missing for schedule ID: ${schedule.scheduleID}")
                     continue
                 }
-
-                // Only use the specific startTime of THIS schedule entity for the current day
                 val potentialDosesForCurrentDay: List<LocalDateTime> = listOf(schedule.startTime.atDate(today))
 
 
@@ -202,11 +203,6 @@ class ScheduleViewModel @Inject constructor(
                     val isPast = !isFutureDose && !isCurrentlyDue
 
 
-                    // *** CRITICAL CHANGE: Include all relevant doses for the day, regardless of past taken status ***
-                    // We want to show:
-                    // 1. Future doses
-                    // 2. Currently due doses
-                    // 3. Any past doses (whether taken or not, so the user has a full overview)
                     if (isFutureDose || isCurrentlyDue || isPast) {
                         val detail = ScheduleWithDetails(
                             schedule = schedule,
@@ -241,7 +237,6 @@ class ScheduleViewModel @Inject constructor(
         return (0..1).random() == 1
     }
 
-    // Método para marcar una toma como completada
     fun markScheduleAsCompleted(scheduleId: Int, date: LocalDate, time: LocalTime) {
         viewModelScope.launch {
             // Implementar lógica para marcar como completada
@@ -249,7 +244,6 @@ class ScheduleViewModel @Inject constructor(
         }
     }
 
-    // Método para eliminar un schedule
     fun deleteSchedule(scheduleId: Long) {
         viewModelScope.launch {
             try {
@@ -261,7 +255,6 @@ class ScheduleViewModel @Inject constructor(
         }
     }
 
-    // Método para actualizar un schedule
     fun updateSchedule(schedule: Schedule) {
         viewModelScope.launch {
             try {

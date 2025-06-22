@@ -1,5 +1,6 @@
 package ar.ort.edu.proyecto_final_grupo_4.navigation
 
+import android.util.Log
 import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.NavHostController
 import androidx.compose.runtime.Composable
@@ -17,6 +18,7 @@ import ar.ort.edu.proyecto_final_grupo_4.ui.screens.reminder.ReminderScreen
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import androidx.navigation.compose.composable // This is crucial for the composable function itself
+import ar.ort.edu.proyecto_final_grupo_4.ui.screens.editMedications.MedicationDetailScreen
 
 @Composable
 
@@ -47,18 +49,17 @@ fun Navigation(navController: NavHostController, onDestinationChanged: (String) 
         }
         composable(route = Screens.RegisterScreen.screen) {
             RegisterScreen(navController = navController)
-            composable("confirmMedication/{scheduleId}") { backStackEntry ->
-                val scheduleId =
-                    backStackEntry.arguments?.getString("scheduleId")?.toLong() ?: return@composable
-            }
-            //ConfirmMedicationScreen(scheduleId = scheduleId)
-            composable(route = Screens.EditMedications.screen) {
-                EditMedicationsScreen(navController)
-            }
-            composable(route = Screens.History.screen) {
-                HistoryScreen(navController = navController)
-            }
 
+
+        }
+        composable("confirmMedication/{scheduleId}") { backStackEntry ->
+            val scheduleId = backStackEntry.arguments?.getString("scheduleId")?.toLong() ?: return@composable
+        }
+        composable(route = Screens.EditMedications.screen) {
+            EditMedicationsScreen(navController)
+        }
+        composable(route = Screens.History.screen) {
+            HistoryScreen(navController = navController)
         }
         composable(route = "medication_confirmation/{scheduleIds}/{fromNotification}",
             arguments = listOf(
@@ -76,8 +77,22 @@ fun Navigation(navController: NavHostController, onDestinationChanged: (String) 
                 navController = navController,
             )
         }
+        composable(
+            route = "medication_details/{medicationId}", // Define the route with argument
+            arguments = listOf(
+                navArgument("medicationId") { type = NavType.LongType } // Specify type
+            )
+        ) { backStackEntry ->
+            val medicationId = backStackEntry.arguments?.getLong("medicationId")
+            if (medicationId != null) {
+                MedicationDetailScreen(navController = navController, medicationId = medicationId) // Use new screen
+            } else {
+                Log.e("Navigation", "MedicationDetailScreen: Missing medicationId argument")
+                navController.popBackStack()
+            }
+        }
+    }
 
     }
-}
 
 

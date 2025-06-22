@@ -62,18 +62,31 @@ class MedicationSchedulerService(
         try {
             val schedule = scheduleRepository.getScheduleById(scheduleId)
             schedule?.let { sched ->
+                alarmManager.cancelAlarm(sched.scheduleID)
+
                 if (sched.isActive) {
                     val medication = medicationRepository.getById(sched.medicationID)
                     medication?.let { med ->
                         val dosageUnit = dosageUnitRepository.getById(med.dosageUnitID)
+                        // Then, reschedule new ones based on the updated schedule
                         scheduleAlarmsForMedication(sched, med, dosageUnit?.name ?: "")
-                        println("------Alarma agregada-----")
+                        println("------Alarma reprogramada para schedule ID: ${sched.scheduleID}-----")
                     }
-
                 }
             }
         } catch (e: Exception) {
             Log.e("MedicationSchedulerService", "Error reprogramando medicamento", e)
+        }
+    }
+    suspend fun cancelAlarmsForMedication(medicationId: Long) {
+        try {
+            val schedulesForMed = scheduleRepository.getSchedulesForMedication(medicationId)
+            schedulesForMed.forEach { schedule ->
+                alarmManager.cancelAlarm(schedule.scheduleID) // This needs to cancel all PIs associated with this scheduleID
+            }
+            Log.d("MedicationSchedulerService", "Cancelled alarms for medication ID: $medicationId")
+        } catch (e: Exception) {
+            Log.e("MedicationSchedulerService", "Error cancelling alarms for medication", e)
         }
     }
 

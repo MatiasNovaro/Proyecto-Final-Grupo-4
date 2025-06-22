@@ -5,7 +5,6 @@ import android.annotation.SuppressLint
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -13,16 +12,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.media3.common.util.Log
 import androidx.navigation.NavController
 import ar.ort.edu.proyecto_final_grupo_4.domain.model.Medication
-import ar.ort.edu.proyecto_final_grupo_4.domain.model.Schedule
 import ar.ort.edu.proyecto_final_grupo_4.viewmodel.MedicationViewModel
 import ar.ort.edu.proyecto_final_grupo_4.viewmodel.UserViewModel
 import ar.ort.edu.proyecto_final_grupo_4.domain.model.DosageUnit
@@ -31,8 +28,6 @@ import ar.ort.edu.proyecto_final_grupo_4.viewmodel.ScheduleViewModel
 import ar.ort.edu.proyecto_final_grupo_4.ui.components.FrequencySelector
 import java.time.LocalTime
 import java.util.Calendar
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 @SuppressLint("DefaultLocale")
@@ -240,6 +235,12 @@ private fun DosageUnitDropdown(
             value = selectedUnit?.name ?: "",
             onValueChange = {},
             label = { Text("Unidad de Dosis") },
+            placeholder = {
+                Text(
+                    "Seleccionar unidad",
+                    color = Color.Gray
+                )
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable { expanded = true },
@@ -267,7 +268,7 @@ private fun DosageUnitDropdown(
                 )
             }
 
-            Divider()
+            HorizontalDivider()
             DropdownMenuItem(
                 text = { Text("Agregar nueva unidad...") },
                 onClick = {
@@ -326,15 +327,22 @@ private fun AddUnitDialog(
                 value = newUnitName,
                 onValueChange = { newUnitName = it },
                 label = { Text("Nombre de la unidad") },
+                placeholder = {
+                    Text(
+                        "Ej. mg, ml, pastillas",
+                        color = Color.Gray
+                    )
+                },
                 singleLine = true
             )
         }
     )
 }
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun TimeSelector(
+fun TimeSelector(
     selectedTime: LocalTime?,
     onTimeSelected: (LocalTime) -> Unit
 ) {

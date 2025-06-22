@@ -141,4 +141,26 @@ class MedicationAlarmManager(
             Thread.sleep(50)
         }
     }
+    fun cancelAlarm(scheduleId: Long) {
+
+        Log.w("AlarmDebug", "Mass cancellation for scheduleId $scheduleId not fully implemented due to dynamic requestCodes. Future alarms may persist if not explicitly cancelled by their exact requestCode.")
+
+        val intent = Intent(context, MedicationAlarmReceiver::class.java).apply {
+            putExtra("scheduleId", scheduleId) // Still include for potential matching
+        }
+        val requestCodeForPrimary = scheduleId.hashCode() // Simpler requestCode for testing mass cancel
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            requestCodeForPrimary,
+            intent,
+            PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+        )
+        if (pendingIntent != null) {
+            alarmManager.cancel(pendingIntent)
+            Log.d("AlarmDebug", "Cancelled existing PendingIntent for scheduleId $scheduleId with requestCode $requestCodeForPrimary")
+        } else {
+            Log.d("AlarmDebug", "No existing PendingIntent found for scheduleId $scheduleId with requestCode $requestCodeForPrimary")
+        }
+    }
+
 }

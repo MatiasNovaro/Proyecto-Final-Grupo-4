@@ -5,6 +5,7 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 import ar.ort.edu.proyecto_final_grupo_4.domain.model.Medication
 import kotlinx.coroutines.flow.Flow
 
@@ -18,6 +19,9 @@ interface MedicationDao {
 
     @Query("SELECT * FROM medication WHERE medicationID = :id")
     suspend fun getById(id: Long): Medication?
+
+    @Update
+    suspend fun update(medication: Medication)
 
     @Delete
     suspend fun deleteMedication(medication: Medication)

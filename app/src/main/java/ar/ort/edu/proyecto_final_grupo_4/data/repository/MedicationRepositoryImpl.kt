@@ -19,7 +19,7 @@ class MedicationRepositoryImpl @Inject constructor(
         // Validar que el userID sea válido
         require(medication.userID > 0) { "Debe haber un usuario asignado al medicamento." }
 
-        // Validar que no haya medicamentos duplicados (si es necesario)
+        // Validar que no haya medicamentos duplicados
 //        val existingMedication = medicationDao.getMedicationsByUser(medication.userID)
 //            .any { it.name == medication.name }
 //        require(!existingMedication) { "El medicamento ya está registrado para este usuario." }
@@ -37,6 +37,10 @@ class MedicationRepositoryImpl @Inject constructor(
 
     override suspend fun deleteMedication(medication: Medication) {
         medicationDao.deleteMedication(medication)
+    }
+
+    override suspend fun updateMedication(medication: Medication) {
+        medicationDao.update(medication)
     }
 }
 
