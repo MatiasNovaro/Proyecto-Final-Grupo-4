@@ -6,6 +6,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -65,20 +66,18 @@ fun BottomNavigationBar(
         )
 
         NavigationBarItem(
-
             icon = {
                 Icon(
-                    Icons.Default.ExitToApp,
-                    contentDescription = "Cerrar Sesión"
+                    Icons.Default.Settings,
+                    contentDescription = "Ajustes"
                 )
             },
-            label = { Text("Salir") },
+            label = { Text("Ajustes") },
             selected = false,
             onClick = {
-                authViewModel.signOut()
-            },
-            enabled = !authState.isLoading
-
+                navController.navigate("AjustesScreen")
+            }
         )
+
     }
 }

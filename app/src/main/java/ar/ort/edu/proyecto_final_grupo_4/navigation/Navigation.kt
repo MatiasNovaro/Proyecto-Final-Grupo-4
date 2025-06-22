@@ -59,6 +59,19 @@ fun Navigation(navController: NavHostController, onDestinationChanged: (String) 
         composable(route = Screens.History.screen) {
             HistoryScreen(navController = navController)
         }
+
+        composable(route = Screens.AjustesScreen.screen) {
+            AjustesScreen(navController = navController)
+        }
+
+        composable(route = Screens.CambiarNombreScreen.screen) {
+            CmbiarNombreScreen(navController = navController)
+        }
+
+        composable(route = Screens.CambiarContraseniaScreen.screen) {
+            CambiarContraseniaScreen(navController = navController)
+        }
+
         composable(route = "medication_confirmation/{scheduleIds}/{fromNotification}",
             arguments = listOf(
                 navArgument("scheduleIds") { type = NavType.StringType },
