@@ -17,6 +17,9 @@ import ar.ort.edu.proyecto_final_grupo_4.ui.screens.reminder.ReminderScreen
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import androidx.navigation.compose.composable // This is crucial for the composable function itself
+import ar.ort.edu.proyecto_final_grupo_4.ui.screens.login.CambiarContraseniaScreen
+import ar.ort.edu.proyecto_final_grupo_4.ui.screens.login.CambiarNombreScreen
+import ar.ort.edu.proyecto_final_grupo_4.ui.screens.settings.AjustesScreen
 
 @Composable
 
@@ -59,6 +62,19 @@ fun Navigation(navController: NavHostController, onDestinationChanged: (String) 
         composable(route = Screens.History.screen) {
             HistoryScreen(navController = navController)
         }
+
+        composable(route = Screens.AjustesScreen.screen) {
+            AjustesScreen(navController = navController)
+        }
+
+        composable(route = Screens.CambiarNombreScreen.screen) {
+            CambiarNombreScreen(navController = navController)
+        }
+
+        composable(route = Screens.CambiarContraseniaScreen.screen) {
+            CambiarContraseniaScreen(navController = navController)
+        }
+
         composable(route = "medication_confirmation/{scheduleIds}/{fromNotification}",
             arguments = listOf(
                 navArgument("scheduleIds") { type = NavType.StringType },

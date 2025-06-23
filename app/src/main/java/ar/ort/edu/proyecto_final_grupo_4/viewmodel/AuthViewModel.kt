@@ -2,9 +2,11 @@ package ar.ort.edu.proyecto_final_grupo_4.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthException
 import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.auth.UserProfileChangeRequest
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,7 +18,9 @@ data class AuthState(
     val user: FirebaseUser? = null,
     val error: String? = null,
     val isSuccess: Boolean = false,
-    val isAuthInitialized: Boolean = false
+    val isAuthInitialized: Boolean = false,
+    val isUsernameUpdateSuccess: Boolean = false,
+    val isPasswordUpdateSuccess: Boolean = false
 )
 
 class AuthViewModel : ViewModel() {
@@ -138,6 +142,140 @@ class AuthViewModel : ViewModel() {
         }
     }
 
+    fun updateUsername(newUsername: String) {
+        viewModelScope.launch {
+            try {
+                _authState.value = _authState.value.copy(
+                    isLoading = true,
+                    error = null,
+                    isUsernameUpdateSuccess = false
+                )
+
+                val currentUser = auth.currentUser
+                if (currentUser == null) {
+                    _authState.value = _authState.value.copy(
+                        isLoading = false,
+                        error = "Usuario no autenticado"
+                    )
+                    return@launch
+                }
+
+                val profileUpdates = UserProfileChangeRequest.Builder()
+                    .setDisplayName(newUsername.trim())
+                    .build()
+
+                currentUser.updateProfile(profileUpdates).await()
+
+                _authState.value = _authState.value.copy(
+                    isLoading = false,
+                    user = currentUser,
+                    isUsernameUpdateSuccess = true,
+                    error = null
+                )
+
+            } catch (e: FirebaseAuthException) {
+                _authState.value = _authState.value.copy(
+                    isLoading = false,
+                    error = getFirebaseErrorMessage(e.errorCode),
+                    isUsernameUpdateSuccess = false
+                )
+            } catch (e: Exception) {
+                val errorMessage = when {
+                    e.message?.contains("network") == true -> "Error de conexión. Verifica tu internet"
+                    e.message?.contains("timeout") == true -> "La operación tardó demasiado. Intenta nuevamente"
+                    else -> "Error al actualizar el nombre. Intenta nuevamente"
+                }
+
+                _authState.value = _authState.value.copy(
+                    isLoading = false,
+                    error = errorMessage,
+                    isUsernameUpdateSuccess = false
+                )
+            }
+        }
+    }
+
+    fun updatePassword(currentPassword: String, newPassword: String) {
+        viewModelScope.launch {
+            try {
+                _authState.value = _authState.value.copy(
+                    isLoading = true,
+                    error = null,
+                    isPasswordUpdateSuccess = false
+                )
+
+                val currentUser = auth.currentUser
+                if (currentUser == null) {
+                    _authState.value = _authState.value.copy(
+                        isLoading = false,
+                        error = "Usuario no autenticado"
+                    )
+                    return@launch
+                }
+
+                val email = currentUser.email
+                if (email == null) {
+                    _authState.value = _authState.value.copy(
+                        isLoading = false,
+                        error = "No se pudo obtener el email del usuario"
+                    )
+                    return@launch
+                }
+
+                // Validar que la nueva contraseña tenga al menos 6 caracteres
+                if (newPassword.length < 6) {
+                    _authState.value = _authState.value.copy(
+                        isLoading = false,
+                        error = "La nueva contraseña debe tener al menos 6 caracteres"
+                    )
+                    return@launch
+                }
+
+                // Re-autenticar al usuario con su contraseña actual
+                val credential = EmailAuthProvider.getCredential(email, currentPassword)
+                currentUser.reauthenticate(credential).await()
+
+                // Actualizar la contraseña
+                currentUser.updatePassword(newPassword).await()
+
+                _authState.value = _authState.value.copy(
+                    isLoading = false,
+                    isPasswordUpdateSuccess = true,
+                    error = null
+                )
+
+            } catch (e: FirebaseAuthException) {
+                val errorMessage = when (e.errorCode) {
+                    "ERROR_WRONG_PASSWORD" -> "La contraseña actual es incorrecta"
+                    "ERROR_INVALID_CREDENTIAL" -> "La contraseña actual es incorrecta"
+                    "ERROR_WEAK_PASSWORD" -> "La nueva contraseña debe tener al menos 6 caracteres"
+                    "ERROR_TOO_MANY_REQUESTS" -> "Demasiados intentos fallidos. Intenta más tarde"
+                    "ERROR_REQUIRES_RECENT_LOGIN" -> "Por seguridad, debes iniciar sesión nuevamente"
+                    else -> getFirebaseErrorMessage(e.errorCode)
+                }
+
+                _authState.value = _authState.value.copy(
+                    isLoading = false,
+                    error = errorMessage,
+                    isPasswordUpdateSuccess = false
+                )
+            } catch (e: Exception) {
+                val errorMessage = when {
+                    e.message?.contains("network") == true -> "Error de conexión. Verifica tu internet"
+                    e.message?.contains("timeout") == true -> "La operación tardó demasiado. Intenta nuevamente"
+                    e.message?.contains("credential") == true -> "La contraseña actual es incorrecta"
+                    else -> "Error al actualizar la contraseña. Intenta nuevamente"
+                }
+
+                _authState.value = _authState.value.copy(
+                    isLoading = false,
+                    error = errorMessage,
+                    isPasswordUpdateSuccess = false
+                )
+            }
+        }
+    }
+
     fun signOut() {
         try {
             auth.signOut()
@@ -159,6 +297,14 @@ class AuthViewModel : ViewModel() {
 
     fun clearSuccess() {
         _authState.value = _authState.value.copy(isSuccess = false)
+    }
+
+    fun clearUsernameUpdateSuccess() {
+        _authState.value = _authState.value.copy(isUsernameUpdateSuccess = false)
+    }
+
+    fun clearPasswordUpdateSuccess() {
+        _authState.value = _authState.value.copy(isPasswordUpdateSuccess = false)
     }
 
     private fun getFirebaseErrorMessage(errorCode: String): String {
