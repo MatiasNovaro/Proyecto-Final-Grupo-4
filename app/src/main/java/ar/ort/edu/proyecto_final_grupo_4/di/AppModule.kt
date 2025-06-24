@@ -1,5 +1,6 @@
 package ar.ort.edu.proyecto_final_grupo_4.di
 
+import android.app.NotificationManager
 import android.content.Context
 import androidx.room.Room
 import ar.ort.edu.proyecto_final_grupo_4.R
@@ -8,6 +9,7 @@ import ar.ort.edu.proyecto_final_grupo_4.data.dao.DosageUnitDao
 import ar.ort.edu.proyecto_final_grupo_4.data.dao.MedicationDao
 import ar.ort.edu.proyecto_final_grupo_4.data.dao.MedicationLogDao
 import ar.ort.edu.proyecto_final_grupo_4.data.dao.ScheduleDao
+import ar.ort.edu.proyecto_final_grupo_4.data.dao.ScheduledAlarmDao
 import ar.ort.edu.proyecto_final_grupo_4.data.dao.UserDao
 import ar.ort.edu.proyecto_final_grupo_4.data.network.AppMedicamentosDB
 import ar.ort.edu.proyecto_final_grupo_4.data.repository.DayOfWeekRepositoryImpl
@@ -15,21 +17,25 @@ import ar.ort.edu.proyecto_final_grupo_4.data.repository.DosageUnitRepositoryImp
 import ar.ort.edu.proyecto_final_grupo_4.data.repository.MedicationLogRepositoryImpl
 import ar.ort.edu.proyecto_final_grupo_4.data.repository.MedicationRepositoryImpl
 import ar.ort.edu.proyecto_final_grupo_4.data.repository.ScheduleRepositoryImpl
+import ar.ort.edu.proyecto_final_grupo_4.data.repository.ScheduledAlarmRepositoryImpl
 import ar.ort.edu.proyecto_final_grupo_4.data.repository.UserRepositoryImpl
 import ar.ort.edu.proyecto_final_grupo_4.domain.repository.DayOfWeekRepository
 import ar.ort.edu.proyecto_final_grupo_4.domain.repository.DosageUnitRepository
 import ar.ort.edu.proyecto_final_grupo_4.domain.repository.MedicationLogRepository
 import ar.ort.edu.proyecto_final_grupo_4.domain.repository.MedicationRepository
 import ar.ort.edu.proyecto_final_grupo_4.domain.repository.ScheduleRepository
+import ar.ort.edu.proyecto_final_grupo_4.domain.repository.ScheduledAlarmRepository
 import ar.ort.edu.proyecto_final_grupo_4.domain.repository.UserRepository
-import ar.ort.edu.proyecto_final_grupo_4.services.AlarmCalculartorService
+import ar.ort.edu.proyecto_final_grupo_4.services.AlarmCalculatorService
 import ar.ort.edu.proyecto_final_grupo_4.services.MedicationAlarmManager
 import ar.ort.edu.proyecto_final_grupo_4.services.MedicationSchedulerService
+import ar.ort.edu.proyecto_final_grupo_4.services.NotificationDismissalManager
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -67,6 +73,10 @@ class AppModule {
     @Provides
     fun provideMedicationLogDao(db: AppMedicamentosDB): MedicationLogDao =
         db.medicationLogDao()
+    @Provides
+    fun provideScheduledAlarmDao(db: AppMedicamentosDB): ScheduledAlarmDao {
+        return db.scheduleAlarmDao()
+    }
 
     @Provides
     fun provideMedicationRepository(
@@ -99,14 +109,25 @@ class AppModule {
     ): DosageUnitRepository = DosageUnitRepositoryImpl(dosageUnitDao = dosageUnitDao)
 
     @Provides
+    @Singleton
+    fun provideNotificationDismissalManager(@ApplicationContext context: Context): NotificationDismissalManager {
+        return NotificationDismissalManager(context)
+    }
+    @Provides // Add this
+    @Singleton
+    fun provideScheduledAlarmRepository(scheduledAlarmDao: ScheduledAlarmDao): ScheduledAlarmRepository = ScheduledAlarmRepositoryImpl(scheduledAlarmDao= scheduledAlarmDao )
+
+    @Provides
     fun provideMedicationSchedulerService(
         scheduleRepository: ScheduleRepository,
         medicationRepository: MedicationRepository,
         medicationLogRepository: MedicationLogRepository,
         dosageUnitRepository: DosageUnitRepository,
-        alarmCalculator: AlarmCalculartorService,
+        alarmCalculator: AlarmCalculatorService,
         alarmManager: MedicationAlarmManager,
-        @ApplicationContext context: Context
+        notificationDismissalManager: NotificationDismissalManager,
+        @ApplicationContext context: Context,
+        scheduledAlarmRepository: ScheduledAlarmRepository
     ): MedicationSchedulerService {
         return MedicationSchedulerService(
             scheduleRepository,
@@ -115,14 +136,22 @@ class AppModule {
             dosageUnitRepository,
             alarmCalculator,
             alarmManager,
-            context
+            context = context,
+            notificationDismissalManager = notificationDismissalManager,
+            scheduledAlarmRepository = scheduledAlarmRepository,
         )
     }
     @Provides
-    fun provideAlarmCalculatorService(): AlarmCalculartorService = AlarmCalculartorService()
+    fun provideAlarmCalculatorService(dosageUnitRepository: DosageUnitRepository): AlarmCalculatorService = AlarmCalculatorService(dosageUnitRepository)
 
     @Provides
     fun provideMedicationAlarmManager(@ApplicationContext context: Context): MedicationAlarmManager {
         return MedicationAlarmManager(context)
     }
+    @Provides
+    @Singleton
+    fun provideNotificationManager(@ApplicationContext context: Context): NotificationManager {
+        return context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    }
+
 }

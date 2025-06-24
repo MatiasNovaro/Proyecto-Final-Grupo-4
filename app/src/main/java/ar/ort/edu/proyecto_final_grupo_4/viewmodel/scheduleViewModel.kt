@@ -20,6 +20,7 @@ import ar.ort.edu.proyecto_final_grupo_4.domain.repository.DosageUnitRepository
 import ar.ort.edu.proyecto_final_grupo_4.domain.repository.MedicationLogRepository
 import ar.ort.edu.proyecto_final_grupo_4.domain.repository.MedicationRepository
 import ar.ort.edu.proyecto_final_grupo_4.domain.utils.FrequencyType
+import ar.ort.edu.proyecto_final_grupo_4.services.NotificationDismissalManager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -35,7 +36,8 @@ class ScheduleViewModel @Inject constructor(
     private val dayOfWeekRepository: DayOfWeekRepository,
     private val medicationRepository: MedicationRepository,
     private val dosageUnitRepository: DosageUnitRepository,
-    private val medicationlogRepository: MedicationLogRepository
+    private val medicationlogRepository: MedicationLogRepository,
+    private val notificationDismissalManager: NotificationDismissalManager
 ) : ViewModel() {
 
     private val _schedules = MutableStateFlow<List<Schedule>>(emptyList())
@@ -45,7 +47,6 @@ class ScheduleViewModel @Inject constructor(
     val todaySchedules: StateFlow<List<ScheduleWithDetails>> = _todaySchedules
 
 
-    // Método anterior para compatibilidad
     fun addSchedule(schedule: Schedule) {
         viewModelScope.launch {
             scheduleRepository.insertSchedule(schedule)
@@ -61,34 +62,53 @@ class ScheduleViewModel @Inject constructor(
 
     fun markAsTaken(scheduleId: Long) {
         viewModelScope.launch {
-            // Update schedule status
-            scheduleRepository.updateScheduleStatus(scheduleId, MedicationStatus.TAKEN)
+            try {
+                // Update schedule status (if you have this concept)
+                 scheduleRepository.updateScheduleStatus(scheduleId, MedicationStatus.TAKEN)
 
-            // Create and save a MedicationLog entry for "taken"
-            val medicationLog = MedicationLog(
-                scheduleID = scheduleId,
-                wasTaken = true,
-                timestamp = LocalDateTime.now() // Record the current time
-            )
-            medicationlogRepository.insertLog(medicationLog)
+                // Create and save a MedicationLog entry for "taken"
+                val medicationLog = MedicationLog(
+                    scheduleID = scheduleId,
+                    wasTaken = true,
+                    timestamp = LocalDateTime.now()
+                )
+                medicationlogRepository.insertLog(medicationLog)
 
-            // You might want to also cancel the specific alarm here if not handled elsewhere
-            // Example: medicationAlarmManager.cancelAlarm(scheduleId)
+                // Dismiss the corresponding notification
+                notificationDismissalManager.dismissMedicationNotification(scheduleId)
+
+                Log.d("ScheduleViewModel", "Medication schedule $scheduleId marked as taken and notification dismissed.")
+
+            } catch (e: Exception) {
+                Log.e("ScheduleViewModel", "Error marking schedule $scheduleId as taken: ${e.message}", e)
+                // Handle error (e.g., show a Toast or update UI state)
+            }
         }
     }
 
     fun markAsSkipped(scheduleId: Long) {
         viewModelScope.launch {
-            // Update schedule status
-            scheduleRepository.updateScheduleStatus(scheduleId, MedicationStatus.SKIPPED)
+            try {
+                // Update schedule status (if you have this concept)
+                 scheduleRepository.updateScheduleStatus(scheduleId, MedicationStatus.SKIPPED)
 
-            // Create and save a MedicationLog entry for "skipped"
-            val medicationLog = MedicationLog(
-                scheduleID = scheduleId,
-                wasTaken = false,
-                timestamp = LocalDateTime.now() // Record the current time
-            )
-            medicationlogRepository.insertLog(medicationLog)
+                // Create and save a MedicationLog entry for "skipped"
+                val medicationLog = MedicationLog(
+                    scheduleID = scheduleId,
+                    wasTaken = false,
+                    timestamp = LocalDateTime.now()
+                )
+                medicationlogRepository.insertLog(medicationLog)
+
+                // Dismiss the corresponding notification
+                notificationDismissalManager.dismissMedicationNotification(scheduleId)
+
+                Log.d("ScheduleViewModel", "Medication schedule $scheduleId marked as skipped and notification dismissed.")
+
+            } catch (e: Exception) {
+                Log.e("ScheduleViewModel", "Error marking schedule $scheduleId as skipped: ${e.message}", e)
+                // Handle error
+            }
         }
     }
     fun snoozeAlarm(scheduleId: Long, minutes: Int) {
@@ -143,10 +163,8 @@ class ScheduleViewModel @Inject constructor(
             val today = LocalDate.now()
             val now = LocalDateTime.now() // Get current date and time
 
-            // Get the day of week using java.time.DayOfWeek.getValue() (1=Mon to 7=Sun)
             val dayOfWeekJavaValue = today.dayOfWeek.value
 
-            // Convert to your schema: 0 = Sunday, 1 = Monday, ..., 6 = Saturday
             val currentDayOfWeekInt = if (dayOfWeekJavaValue == 7) 0 else dayOfWeekJavaValue
 
             val todaySchedules = mutableListOf<ScheduleWithDetails>()
@@ -154,17 +172,15 @@ class ScheduleViewModel @Inject constructor(
             for (schedule in allSchedules) {
 
                 if (!schedule.isActive) {
-                    continue // Skip this schedule if it's not active
+                    continue
                 }
                 val isInDateRange = !schedule.startDate.isAfter(today) &&
                         (schedule.endDate == null || !today.isAfter(schedule.endDate))
 
                 if (!isInDateRange) continue
 
-                // Fetch the list of your Room DayOfWeek entities
                 val roomWeekDaysForSchedule: List<DayOfWeek> = dayOfWeekRepository.getDaysForSchedule(schedule.scheduleID)
 
-                // Extract the integer dayOfWeek values (0-6) from these entities
                 val storedWeekDayInts: List<Int> = roomWeekDaysForSchedule.map { it.dayOfWeek }
 
                 val isScheduledTodayBasedOnWeekDays = when (schedule.frequencyType) {
@@ -199,7 +215,6 @@ class ScheduleViewModel @Inject constructor(
                     println("Dentro dol view $wasDoseTaken")
                     val isFutureDose = doseTimeCandidate.isAfter(now)
                     val isCurrentlyDue = !doseTimeCandidate.isBefore(now.minusMinutes(1)) && doseTimeCandidate.isBefore(now.plusMinutes(15))
-                    // Define 'isPast' simply: if it's not future and not currently due, it's past.
                     val isPast = !isFutureDose && !isCurrentlyDue
 
 

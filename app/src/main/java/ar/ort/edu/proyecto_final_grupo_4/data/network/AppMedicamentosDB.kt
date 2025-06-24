@@ -11,13 +11,14 @@ import ar.ort.edu.proyecto_final_grupo_4.data.dao.DosageUnitDao
 import ar.ort.edu.proyecto_final_grupo_4.data.dao.MedicationDao
 import ar.ort.edu.proyecto_final_grupo_4.data.dao.MedicationLogDao
 import ar.ort.edu.proyecto_final_grupo_4.data.dao.ScheduleDao
+import ar.ort.edu.proyecto_final_grupo_4.data.dao.ScheduledAlarmDao
 import ar.ort.edu.proyecto_final_grupo_4.data.dao.UserDao
 import ar.ort.edu.proyecto_final_grupo_4.data.utils.TimeConverter
 import ar.ort.edu.proyecto_final_grupo_4.domain.model.*
 
 
 @Database(
-    version = 6,
+    version = 7,
     exportSchema = false,
     entities = [
         User::class,
@@ -25,7 +26,8 @@ import ar.ort.edu.proyecto_final_grupo_4.domain.model.*
         Medication::class,
         Schedule::class,
         DayOfWeek::class,
-        MedicationLog::class
+        MedicationLog::class,
+        ScheduledAlarmRecord ::class
     ]
 )
 @TypeConverters(TimeConverter::class)
@@ -36,4 +38,5 @@ abstract class AppMedicamentosDB : RoomDatabase() {
     abstract fun scheduleDao(): ScheduleDao
     abstract fun repeatDayDao(): DayOfWeekDao
     abstract fun medicationLogDao(): MedicationLogDao
+    abstract fun scheduleAlarmDao() : ScheduledAlarmDao
 }

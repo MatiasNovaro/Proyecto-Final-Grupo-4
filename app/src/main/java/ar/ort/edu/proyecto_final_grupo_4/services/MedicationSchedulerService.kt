@@ -2,24 +2,30 @@ package ar.ort.edu.proyecto_final_grupo_4.services
 
 import android.content.Context
 import android.util.Log
+import ar.ort.edu.proyecto_final_grupo_4.domain.model.IndividualAlarmOccurrence
 import ar.ort.edu.proyecto_final_grupo_4.domain.model.Medication
 import ar.ort.edu.proyecto_final_grupo_4.domain.model.MedicationAlarm
 import ar.ort.edu.proyecto_final_grupo_4.domain.model.MedicationLog
 import ar.ort.edu.proyecto_final_grupo_4.domain.model.Schedule
+import ar.ort.edu.proyecto_final_grupo_4.domain.model.ScheduledAlarmRecord
 import ar.ort.edu.proyecto_final_grupo_4.domain.repository.DosageUnitRepository
 import ar.ort.edu.proyecto_final_grupo_4.domain.repository.MedicationLogRepository
 import ar.ort.edu.proyecto_final_grupo_4.domain.repository.MedicationRepository
 import ar.ort.edu.proyecto_final_grupo_4.domain.repository.ScheduleRepository
+import ar.ort.edu.proyecto_final_grupo_4.domain.repository.ScheduledAlarmRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.time.LocalDateTime
+import javax.inject.Inject
 
-class MedicationSchedulerService(
+class MedicationSchedulerService @Inject constructor(
     private val scheduleRepository: ScheduleRepository,
     private val medicationRepository: MedicationRepository,
     private val medicationLogRepository: MedicationLogRepository,
     private val dosageUnitRepository: DosageUnitRepository,
-    private val alarmCalculator: AlarmCalculartorService,
+    private val alarmCalculator: AlarmCalculatorService, // Note: Confirmed 'AlarmCalculatorService' spelling.
     private val alarmManager: MedicationAlarmManager,
+    private val notificationDismissalManager: NotificationDismissalManager,
+    private val scheduledAlarmRepository: ScheduledAlarmRepository,
     @ApplicationContext private val context: Context
 ) {
     suspend fun scheduleAllActiveMedications() {
@@ -29,8 +35,9 @@ class MedicationSchedulerService(
             activeSchedules.forEach { schedule ->
                 val medication = medicationRepository.getById(schedule.medicationID)
                 medication?.let { med ->
-                    val dosageUnit = dosageUnitRepository.getById(med.dosageUnitID)
-                    scheduleAlarmsForMedication(schedule, med, dosageUnit?.name ?: "")
+                    // dosageUnitName is now inside IndividualAlarmOccurrence, so it's not strictly needed here
+                    // val dosageUnit = dosageUnitRepository.getById(med.dosageUnitID)
+                    scheduleAlarmsForMedication(schedule, med) // Removed dosageUnitName parameter
                 }
             }
         } catch (e: Exception) {
@@ -38,61 +45,95 @@ class MedicationSchedulerService(
         }
     }
 
-    private fun scheduleAlarmsForMedication(
+    private suspend fun scheduleAlarmsForMedication(
         schedule: Schedule,
-        medication: Medication,
-        dosageUnitName: String
+        medication: Medication
     ) {
-        val nextAlarms = alarmCalculator.calculateNextAlarms(schedule, medication)
+        val nextAlarms: List<IndividualAlarmOccurrence> = alarmCalculator.calculateNextAlarms(schedule, medication)
 
-        val medicationAlarms = nextAlarms.map { alarmTime ->
+        // Convert IndividualAlarmOccurrence to MedicationAlarm for the AlarmManager
+        val medicationAlarmsToSchedule = nextAlarms.map { individualAlarm ->
             MedicationAlarm(
-                scheduleId = schedule.scheduleID,
-                medicationName = medication.name,
-                dosage = medication.dosage,
-                dosageUnit = dosageUnitName,
-                scheduledTime = alarmTime
+                scheduleId = individualAlarm.scheduleId,
+                medicationName = individualAlarm.medicationName,
+                dosage = individualAlarm.dosage,
+                dosageUnit = individualAlarm.dosageUnit,
+                scheduledTime = individualAlarm.scheduledTime,
+                requestCode = individualAlarm.uniqueRequestCode
             )
         }
 
-        alarmManager.scheduleAllAlarms(medicationAlarms)
+        // Schedule and save each alarm record
+        medicationAlarmsToSchedule.forEach { alarmToSchedule ->
+            alarmManager.scheduleAlarm(alarmToSchedule)
+
+            // Save the details of the *successfully scheduled* alarm
+            val record = ScheduledAlarmRecord(
+                scheduleId = alarmToSchedule.scheduleId,
+                medicationId = medication.medicationID, // Make sure Medication has an ID property
+                requestCode = alarmToSchedule.requestCode,
+                scheduledTime = alarmToSchedule.scheduledTime
+            )
+            scheduledAlarmRepository.insertScheduledAlarmRecord(record)
+            Log.d("MedSchedulerService", "Scheduled alarm and saved record: ${record.requestCode} for ${record.scheduledTime}")
+        }
+        Log.d("MedSchedulerService", "Finished scheduling ${medicationAlarmsToSchedule.size} alarms for schedule ID: ${schedule.scheduleID}")
     }
 
     suspend fun rescheduleMedication(scheduleId: Long) {
         try {
             val schedule = scheduleRepository.getScheduleById(scheduleId)
             schedule?.let { sched ->
-                alarmManager.cancelAlarm(sched.scheduleID)
+                val medication = medicationRepository.getById(sched.medicationID)
+                medication?.let { med ->
+                    // 1. Cancel ALL currently scheduled alarms specifically for this schedule
+                    cancelAlarmsForSchedule(sched.scheduleID)
 
-                if (sched.isActive) {
-                    val medication = medicationRepository.getById(sched.medicationID)
-                    medication?.let { med ->
-                        val dosageUnit = dosageUnitRepository.getById(med.dosageUnitID)
-                        // Then, reschedule new ones based on the updated schedule
-                        scheduleAlarmsForMedication(sched, med, dosageUnit?.name ?: "")
-                        println("------Alarma reprogramada para schedule ID: ${sched.scheduleID}-----")
+                    // 2. If the schedule is still active, calculate and schedule NEW alarms
+                    if (sched.isActive) {
+                        scheduleAlarmsForMedication(sched, med)
+                        Log.d("MedSchedulerService", "Alarms re-scheduled for schedule ID: ${sched.scheduleID}")
+                    } else {
+                        // If schedule became inactive, just cancel and don't re-schedule
+                        Log.d("MedSchedulerService", "Schedule ID: ${sched.scheduleID} is inactive, alarms cancelled.")
                     }
                 }
             }
         } catch (e: Exception) {
-            Log.e("MedicationSchedulerService", "Error reprogramando medicamento", e)
-        }
-    }
-    suspend fun cancelAlarmsForMedication(medicationId: Long) {
-        try {
-            val schedulesForMed = scheduleRepository.getSchedulesForMedication(medicationId)
-            schedulesForMed.forEach { schedule ->
-                alarmManager.cancelAlarm(schedule.scheduleID) // This needs to cancel all PIs associated with this scheduleID
-            }
-            Log.d("MedicationSchedulerService", "Cancelled alarms for medication ID: $medicationId")
-        } catch (e: Exception) {
-            Log.e("MedicationSchedulerService", "Error cancelling alarms for medication", e)
+            Log.e("MedSchedulerService", "Error rescheduling medication for schedule ID: $scheduleId", e)
         }
     }
 
-//    suspend fun cancelMedicationAlarms(scheduleId: Long) {
-//        alarmManager.cancelAlarm(scheduleId)
-//    }
+    // This method needs to be updated to retrieve all request codes for a medication's schedules
+    // and then call alarmManager.cancelAlarm(requestCode) for each.
+    private suspend fun cancelAlarmsForSchedule(scheduleId: Long) {
+        try {
+            val scheduledRecords = scheduledAlarmRepository.getScheduledAlarmRecordsByScheduleId(scheduleId)
+            scheduledRecords.forEach { record ->
+                alarmManager.cancelAlarm(record.requestCode)
+                scheduledAlarmRepository.deleteScheduledAlarmRecordByRequestCode(record.requestCode) // Delete from DB
+                Log.d("MedSchedulerService", "Cancelled and removed record for requestCode: ${record.requestCode} (Schedule ID: ${record.scheduleId})")
+            }
+            Log.d("MedSchedulerService", "Finished cancelling and clearing records for schedule ID: $scheduleId")
+        } catch (e: Exception) {
+            Log.e("MedSchedulerService", "Error cancelling alarms for schedule ID: $scheduleId", e)
+        }
+    }
+
+    // Modify existing cancelAlarmsForMedication to use the new repository
+    suspend fun cancelAlarmsForMedication(medicationId: Long) {
+        try {
+            val scheduledRecords = scheduledAlarmRepository.getScheduledAlarmRecordsByMedicationId(medicationId)
+            scheduledRecords.forEach { record ->
+                alarmManager.cancelAlarm(record.requestCode)
+                scheduledAlarmRepository.deleteScheduledAlarmRecordByRequestCode(record.requestCode) // Delete from DB
+                Log.d("MedSchedulerService", "Cancelled and removed record for requestCode: ${record.requestCode} (Med ID: ${record.medicationId})")
+            }
+            Log.d("MedSchedulerService", "Finished cancelling and clearing records for medication ID: $medicationId")
+        } catch (e: Exception) {
+            Log.e("MedSchedulerService", "Error cancelling alarms for medication ID: $medicationId", e)
+        }
+    }
 
     suspend fun logMedicationTaken(scheduleId: Long) {
         try {
@@ -102,8 +143,11 @@ class MedicationSchedulerService(
                 timestamp = LocalDateTime.now()
             )
             medicationLogRepository.insertLog(medicationLog)
+            // Dismiss the notification. Needs NotificationDismissalManager injected.
+            // notificationDismissalManager.dismissMedicationNotification(scheduleId)
+            Log.d("MedicationSchedulerService", "Log for schedule $scheduleId saved as TAKEN.")
         } catch (e: Exception) {
-            Log.e("MedicationSchedulerService", "Error guardando log de medicamento", e)
+            Log.e("MedicationSchedulerService", "Error saving log for taken medication", e)
         }
     }
     suspend fun logMedicationNotTaken(scheduleId: Long) {
@@ -114,8 +158,11 @@ class MedicationSchedulerService(
                 timestamp = LocalDateTime.now()
             )
             medicationLogRepository.insertLog(medicationLog)
+            // Dismiss the notification. Needs NotificationDismissalManager injected.
+            // notificationDismissalManager.dismissMedicationNotification(scheduleId)
+            Log.d("MedicationSchedulerService", "Log for schedule $scheduleId saved as NOT TAKEN.")
         } catch (e: Exception) {
-            Log.e("MedicationSchedulerService", "Error guardando log de medicamento", e)
+            Log.e("MedicationSchedulerService", "Error saving log for not taken medication", e)
         }
     }
 }
