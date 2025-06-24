@@ -13,7 +13,6 @@ import android.content.Intent
 import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.media.AudioAttributes
-import android.media.AudioManager
 import android.media.RingtoneManager
 import android.os.Build
 import android.os.Handler
@@ -27,8 +26,6 @@ import ar.ort.edu.proyecto_final_grupo_4.R
 import android.util.Log
 import android.widget.Toast
 import androidx.annotation.RequiresPermission
-import java.time.LocalDateTime
-
 
 
 class MedicationAlarmReceiver : BroadcastReceiver() {
@@ -53,6 +50,7 @@ class MedicationAlarmReceiver : BroadcastReceiver() {
         val dosage = intent.getStringExtra("dosage") ?: ""
         val scheduleId = intent.getLongExtra("scheduleId", -1)
         val originalTime = intent.getStringExtra("originalScheduledTime") ?: "Unknown"
+        val triggerTimeMillis = intent.getLongExtra("triggerTimeMillis", System.currentTimeMillis()) // retrieve it
 
         Log.d("AlarmReceiver", "Medication: $medName, Dosage: $dosage, Schedule ID: $scheduleId")
 
@@ -66,7 +64,7 @@ class MedicationAlarmReceiver : BroadcastReceiver() {
 
         // Delay slightly to collect multiple alarms that might trigger at the same time
         Handler(Looper.getMainLooper()).postDelayed( {
-            processPendingAlarms(context, timeKey)
+            processPendingAlarms(context, timeKey, triggerTimeMillis)
         }, 2000) // 2 second delay to collect concurrent alarms
 
         Log.d("AlarmReceiver", "✅ ===== ALARM PROCESSED =====")
@@ -83,17 +81,17 @@ class MedicationAlarmReceiver : BroadcastReceiver() {
     }
 
     @androidx.annotation.RequiresPermission(android.Manifest.permission.VIBRATE)
-    private fun processPendingAlarms(context: Context, timeKey: String) {
+    private fun processPendingAlarms(context: Context, timeKey: String, triggerTimeMillis: Long) {
         synchronized(pendingAlarms){
             val alarms = pendingAlarms[timeKey] ?: return
             if (alarms.isEmpty()) return
 
             if (alarms.size == 1) {
                 // Single alarm notification
-                createSingleNotification(context, alarms[0])
+                createSingleNotification(context, alarms[0], triggerTimeMillis)
             } else {
                 // Multiple alarms - create grouped notification
-                createGroupedNotification(context, alarms, timeKey)
+                createGroupedNotification(context, alarms, timeKey, triggerTimeMillis)
             }
 
             // Play enhanced vibration (sound handled by channel now)
@@ -104,7 +102,11 @@ class MedicationAlarmReceiver : BroadcastReceiver() {
         }
     }
 
-    private fun createSingleNotification(context: Context, alarm: AlarmData) {
+    private fun createSingleNotification(
+        context: Context,
+        alarm: AlarmData,
+        triggerTimeMillis: Any?
+    ) {
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         createNotificationChannel(context, notificationManager) // Ensure channel exists first
 
@@ -118,21 +120,21 @@ class MedicationAlarmReceiver : BroadcastReceiver() {
         )
 
         // Create action buttons
-        val takenIntent = createActionIntent(context, "TAKEN", listOf(alarm.scheduleId))
-        val takenPendingIntent = PendingIntent.getBroadcast(
-            context,
-            (alarm.scheduleId * 10).toInt(),
-            takenIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-
-        val snoozeIntent = createActionIntent(context, "SNOOZE", listOf(alarm.scheduleId))
-        val snoozePendingIntent = PendingIntent.getBroadcast(
-            context,
-            (alarm.scheduleId * 10 + 1).toInt(),
-            snoozeIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
+//        val takenIntent = createActionIntent(context, "TAKEN", listOf(alarm.scheduleId))
+//        val takenPendingIntent = PendingIntent.getBroadcast(
+//            context,
+//            (alarm.scheduleId * 10).toInt(),
+//            takenIntent,
+//            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+//        )
+//
+//        val snoozeIntent = createActionIntent(context, "SNOOZE", listOf(alarm.scheduleId))
+//        val snoozePendingIntent = PendingIntent.getBroadcast(
+//            context,
+//            (alarm.scheduleId * 10 + 1).toInt(),
+//            snoozeIntent,
+//            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+//        )
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.clock_icon) // Use a dedicated medication icon
@@ -144,28 +146,33 @@ class MedicationAlarmReceiver : BroadcastReceiver() {
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setAutoCancel(false) // Don't auto-cancel, require user action
-            .setOngoing(true) // Make it persistent
+            .setAutoCancel(true) // Don't auto-cancel, require user action
+            .setOngoing(false) // Make it persistent
             .setContentIntent(pendingIntent)
-            .addAction(NotificationCompat.Action.Builder(
-                R.drawable.clock_icon, // Use appropriate icon for "Tomado"
-                "Tomado",
-                takenPendingIntent
-            ).build())
-            .addAction(NotificationCompat.Action.Builder(
-                R.drawable.clock_icon, // Use appropriate icon for "Posponer"
-                "Posponer",
-                snoozePendingIntent
-            ).build())
+//            .addAction(NotificationCompat.Action.Builder(
+//                R.drawable.clock_icon, // Use appropriate icon for "Tomado"
+//                "Tomado",
+//                takenPendingIntent
+//            ).build())
+//            .addAction(NotificationCompat.Action.Builder(
+//                R.drawable.clock_icon, // Use appropriate icon for "Posponer"
+//                "Posponer",
+//                snoozePendingIntent
+//            ).build())
             .setDefaults(0) // Set to 0 because channel handles sound/vibration
             .setGroup(GROUP_KEY)
             .build()
 
-        notificationManager.notify(alarm.scheduleId.toInt(), notification)
+        notificationManager.notify((alarm.scheduleId.hashCode() + triggerTimeMillis.hashCode()), notification)
     }
 
     @SuppressLint("RestrictedApi")
-    private fun createGroupedNotification(context: Context, alarms: List<AlarmData>, timeKey: String) {
+    private fun createGroupedNotification(
+        context: Context,
+        alarms: List<AlarmData>,
+        timeKey: String,
+        triggerTimeMillis: Long
+    ) {
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         createNotificationChannel(context, notificationManager) // Ensure channel exists first
 
@@ -181,13 +188,13 @@ class MedicationAlarmReceiver : BroadcastReceiver() {
         )
 
         // Create group action intents
-        val allTakenIntent = createActionIntent(context, "ALL_TAKEN", scheduleIds)
-        val allTakenPendingIntent = PendingIntent.getBroadcast(
-            context,
-            timeKey.hashCode() * 10,
-            allTakenIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
+//        val allTakenIntent = createActionIntent(context, "ALL_TAKEN", scheduleIds)
+//        val allTakenPendingIntent = PendingIntent.getBroadcast(
+//            context,
+//            timeKey.hashCode() * 10,
+//            allTakenIntent,
+//            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+//        )
 
         // Create individual notifications for each medication (collapsed in group)
         alarms.forEach { alarm ->
@@ -201,7 +208,7 @@ class MedicationAlarmReceiver : BroadcastReceiver() {
                 .setDefaults(0) // Set to 0 because channel handles sound/vibration
                 .build()
 
-            notificationManager.notify(alarm.scheduleId.toInt(), individualNotification)
+            notificationManager.notify((alarm.scheduleId.hashCode() + triggerTimeMillis.hashCode()), individualNotification)
         }
 
         // Define 'summary' BEFORE it's used in the builder
@@ -225,11 +232,11 @@ class MedicationAlarmReceiver : BroadcastReceiver() {
             .setAutoCancel(false)
             .setOngoing(true)
             .setContentIntent(pendingIntent)
-            .addAction(NotificationCompat.Action.Builder(
-                R.drawable.clock_icon, // Use appropriate icon
-                "Todos tomados",
-                allTakenPendingIntent
-            ).build())
+//            .addAction(NotificationCompat.Action.Builder(
+//                R.drawable.clock_icon, // Use appropriate icon
+//                "Todos tomados",
+//                allTakenPendingIntent
+//            ).build())
             .setStyle(inboxStyle) // Apply the created InboxStyle here
             .setGroup(GROUP_KEY)
             .setGroupSummary(true)

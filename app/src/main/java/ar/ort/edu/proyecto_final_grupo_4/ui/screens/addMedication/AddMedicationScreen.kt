@@ -310,7 +310,7 @@ private fun DosageUnitDropdown(
                 )
             }
 
-            Divider()
+            HorizontalDivider()
             DropdownMenuItem(
                 text = { Text("Agregar nueva unidad...") },
                 onClick = {
@@ -381,9 +381,10 @@ private fun AddUnitDialog(
     )
 }
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun TimeSelector(
+fun TimeSelector(
     selectedTime: LocalTime?,
     onTimeSelected: (LocalTime) -> Unit
 ) {

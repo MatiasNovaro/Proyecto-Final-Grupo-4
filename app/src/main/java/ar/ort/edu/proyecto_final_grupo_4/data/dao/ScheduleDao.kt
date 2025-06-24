@@ -5,6 +5,7 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 import ar.ort.edu.proyecto_final_grupo_4.domain.model.MedicationStatus
 import ar.ort.edu.proyecto_final_grupo_4.domain.model.Schedule
 import ar.ort.edu.proyecto_final_grupo_4.domain.model.ScheduleWithMedication
@@ -39,5 +40,7 @@ interface ScheduleDao {
     @Query("UPDATE schedule SET status = :status WHERE scheduleId = :scheduleId")
     suspend fun updateScheduleStatus(scheduleId: Long, status: MedicationStatus)
 
+    @Update
+    suspend fun update(schedule: Schedule)
 
 }

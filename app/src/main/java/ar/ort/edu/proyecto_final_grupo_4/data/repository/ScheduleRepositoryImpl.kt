@@ -19,7 +19,7 @@ class ScheduleRepositoryImpl @Inject constructor(
     }
 
     override suspend fun updateSchedule(schedule: Schedule) {
-        TODO("Not yet implemented")
+        scheduleDao.update(schedule)
     }
 
     override suspend fun getSchedulesForMedication(medicationId: Long): List<Schedule> {

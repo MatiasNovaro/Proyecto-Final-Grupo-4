@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import ar.ort.edu.proyecto_final_grupo_4.navigation.Screens
 import ar.ort.edu.proyecto_final_grupo_4.viewmodel.MedicationViewModel
 import ar.ort.edu.proyecto_final_grupo_4.ui.components.EditMedicationsItem
 import ar.ort.edu.proyecto_final_grupo_4.viewmodel.ScheduleViewModel
