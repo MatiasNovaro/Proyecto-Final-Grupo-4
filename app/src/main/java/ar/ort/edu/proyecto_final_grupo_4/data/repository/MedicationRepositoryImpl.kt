@@ -41,7 +41,7 @@ class MedicationRepositoryImpl @Inject constructor(
 
     override suspend fun updateMedication(medication: Medication) {
         medicationDao.update(medication)
-
+    }
     override suspend fun existsByName(name: String): Boolean {
         return medicationDao.existsByName(name)
     }

@@ -73,7 +73,7 @@ fun EditMedicationsScreen(
                             medicationViewModel.deleteMedication(medication)
                         },
                         onUpdate = {
-                            navController.navigate("editMedication/${medication.medicationID}")
+                            navController.navigate("medication_details/${medication.medicationID}")
                         }
                     )
                     Spacer(modifier = Modifier.height(8.dp))
