@@ -44,6 +44,14 @@ class MedicationViewModel @Inject constructor(
     private val _showErrorDialog = MutableStateFlow(false)
     val showErrorDialog = _showErrorDialog.asStateFlow()
 
+    fun checkMedicationNameExists(name: String, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val exists = medicationRepository.existsByName(name)
+            onResult(exists)
+        }
+    }
+
+
     fun programAlarm(scheduleId: Long) {
         viewModelScope.launch {
             schedulerService.rescheduleMedication(scheduleId)

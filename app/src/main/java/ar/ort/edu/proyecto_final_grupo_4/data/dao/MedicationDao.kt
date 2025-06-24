@@ -25,4 +25,7 @@ interface MedicationDao {
 
     @Delete
     suspend fun deleteMedication(medication: Medication)
+
+    @Query("SELECT EXISTS(SELECT 1 FROM medication WHERE LOWER(name) = LOWER(:name))")
+    suspend fun existsByName(name: String): Boolean
 }

@@ -14,9 +14,11 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import ar.ort.edu.proyecto_final_grupo_4.navigation.Navigation
 import ar.ort.edu.proyecto_final_grupo_4.ui.components.BottomNavigationBar
@@ -38,6 +40,10 @@ class MainActivity : FragmentActivity() {
                 val authViewModel: AuthViewModel = viewModel()
                 val navController = rememberNavController()
                 val currentTitle = remember { mutableStateOf("Home") }
+
+                // Observar cambios de navegación
+                val navBackStackEntry by navController.currentBackStackEntryAsState()
+                val currentRoute = navBackStackEntry?.destination?.route
 
                 // --- START CHANGES HERE ---
                 // Extract arguments from the intent that launched the activity
@@ -73,15 +79,28 @@ class MainActivity : FragmentActivity() {
                 }
                 // --- END CHANGES HERE ---
 
+                // Definir en qué pantallas NO mostrar la bottom bar
+                val hideBottomBarRoutes = listOf(
+                    "LoginScreen",
+                    "RegisterScreen",
+                    "BiometricLogin"
+                )
+
+                val shouldShowBottomBar = currentRoute != null &&
+                        !hideBottomBarRoutes.any { route -> currentRoute.startsWith(route) }
+
                 Scaffold(modifier = Modifier.fillMaxSize(),
                     topBar = {
                         CustomTopBar(
+                            navController = navController,
                             title = currentTitle.value,
                             modifier = Modifier.height(30.dp)
                         )
                     },
                     bottomBar = {
-                        BottomNavigationBar(navController = navController, authViewModel = authViewModel)
+                        if (shouldShowBottomBar) {
+                            BottomNavigationBar(navController = navController, authViewModel = authViewModel)
+                        }
                     }
                 ) { innerPadding ->
                     Column(

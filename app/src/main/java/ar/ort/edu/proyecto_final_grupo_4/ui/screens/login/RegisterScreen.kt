@@ -114,7 +114,7 @@ fun RegisterScreen(
 
         val annotatedText = buildAnnotatedString {
             withStyle(style = SpanStyle(color = Color.Gray)) {
-                append("Ya tienes una cuenta? ")
+                append("¿Ya tienes una cuenta? ")
             }
             withStyle(style = SpanStyle(color = Color(0xFFE76F51), fontWeight = FontWeight.Bold)) {
                 append("Ingresar")

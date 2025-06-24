@@ -9,5 +9,5 @@ interface MedicationRepository {
     suspend fun getById(id: Long): Medication?
     suspend fun deleteMedication(medication: Medication)
     suspend fun updateMedication(medication: Medication)
-
+    suspend fun existsByName(name: String): Boolean
 }

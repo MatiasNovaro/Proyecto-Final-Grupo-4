@@ -12,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -26,9 +27,12 @@ import ar.ort.edu.proyecto_final_grupo_4.domain.model.DosageUnit
 import ar.ort.edu.proyecto_final_grupo_4.domain.utils.FrequencyOption
 import ar.ort.edu.proyecto_final_grupo_4.viewmodel.ScheduleViewModel
 import ar.ort.edu.proyecto_final_grupo_4.ui.components.FrequencySelector
+import ar.ort.edu.proyecto_final_grupo_4.ui.components.CustomTopBar
+import ar.ort.edu.proyecto_final_grupo_4.ui.theme.PrimaryOrange
 import java.time.LocalTime
 import java.util.Calendar
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.shape.RoundedCornerShape
 
 @SuppressLint("DefaultLocale")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -52,57 +56,78 @@ fun AddMedicationScreen(navController: NavController) {
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
+    var nameError by remember { mutableStateOf<String?>(null) }
+
     LaunchedEffect(Unit) {
         userVM.ensureDefaultUser()
         medVM.loadDosageUnits()
     }
+    LaunchedEffect(name) {
+        if (name.isNotBlank()) {
+            medVM.checkMedicationNameExists(name) { exists ->
+                nameError = if (exists) "Este medicamento ya existe" else null
+            }
+        } else {
+            nameError = null
+        }
+    }
 
     Scaffold(
+        topBar = {
+            CustomTopBar(navController = navController)
+        },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp)
                 .padding(paddingValues)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            MedicationScreenHeader()
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                MedicationBasicFields(
+                    name = name,
+                    onNameChange = { name = it },
+                    dosis = dosis,
+                    onDosisChange = { dosis = it },
+                    nameError = nameError
+                )
 
-            MedicationBasicFields(
-                name = name,
-                onNameChange = { name = it },
-                dosis = dosis,
-                onDosisChange = { dosis = it }
-            )
+                FrequencySelector(
+                    selectedFrequency = selectedFrequency,
+                    onFrequencySelected = { selectedFrequency = it },
+                    selectedWeekDays = selectedWeekDays,
+                    onWeekDaysSelected = { selectedWeekDays = it }
+                )
 
-            FrequencySelector(
-                selectedFrequency = selectedFrequency,
-                onFrequencySelected = { selectedFrequency = it },
-                selectedWeekDays = selectedWeekDays,
-                onWeekDaysSelected = { selectedWeekDays = it }
-            )
-
-            DosageUnitDropdown(
-                units = units,
-                selectedUnit = selectedUnit,
-                onUnitSelected = { selectedUnit = it },
-                onUnitAdded = { newUnit ->
-                    medVM.addDosageUnit(newUnit) { savedUnit ->
-                        selectedUnit = savedUnit
+                DosageUnitDropdown(
+                    units = units,
+                    selectedUnit = selectedUnit,
+                    onUnitSelected = { selectedUnit = it },
+                    onUnitAdded = { newUnit ->
+                        medVM.addDosageUnit(newUnit) { savedUnit ->
+                            selectedUnit = savedUnit
+                        }
                     }
-                }
-            )
+                )
 
-            TimeSelector(
-                selectedTime = selectedTime,
-                onTimeSelected = { selectedTime = it }
-            )
+                TimeSelector(
+                    selectedTime = selectedTime,
+                    onTimeSelected = { selectedTime = it }
+                )
+
+                Spacer(modifier = Modifier.weight(1f))
+            }
 
             SaveButton(
-                enabled = name.isNotBlank() && dosis.isNotBlank() && selectedUnit != null &&
+                enabled = name.isNotBlank() && nameError == null &&
+                        dosis.isNotBlank() && selectedUnit != null &&
                         selectedTime != null && selectedFrequency != null,
                 onClick = {
                     user?.let { user ->
@@ -124,7 +149,6 @@ fun AddMedicationScreen(navController: NavController) {
                                         scheduleVM = scheduleVM,
                                     )
 
-                                    // Mostrar el snackbar
                                     coroutineScope.launch {
                                         snackbarHostState.showSnackbar("¡Guardado con éxito!")
                                     }
@@ -132,50 +156,68 @@ fun AddMedicationScreen(navController: NavController) {
                             }
                         }
                     }
-                }
+                },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(16.dp)
             )
         }
     }
 }
 
-@Composable
-private fun MedicationScreenHeader() {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            "Agregar",
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Bold
-        )
-        Text(
-            "Medicamento",
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Bold
-        )
-    }
-}
+
 
 @Composable
 private fun MedicationBasicFields(
     name: String,
     onNameChange: (String) -> Unit,
     dosis: String,
-    onDosisChange: (String) -> Unit
+    onDosisChange: (String) -> Unit,
+    nameError: String?
 ) {
-    OutlinedTextField(
-        value = name,
-        onValueChange = onNameChange,
-        label = { Text("Nombre") },
-        placeholder = { Text("Ej. Paracetamol") },
-        modifier = Modifier.fillMaxWidth()
-    )
+    Column(
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Column {
+            OutlinedTextField(
+                value = name,
+                onValueChange = onNameChange,
+                label = { Text("Nombre") },
+                placeholder = {
+                    Text(
+                        "Ej. Paracetamol",
+                        color = Color.Gray
+                    )
+                },
+                modifier = Modifier.fillMaxWidth(),
+                isError = nameError != null,
+                singleLine = true
+            )
 
-    OutlinedTextField(
-        value = dosis,
-        onValueChange = onDosisChange,
-        label = { Text("Dosis") },
-        placeholder = { Text("Ej. 500 mg") },
-        modifier = Modifier.fillMaxWidth()
-    )
+            if (nameError != null) {
+                Text(
+                    text = nameError,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+        }
+
+        OutlinedTextField(
+            value = dosis,
+            onValueChange = onDosisChange,
+            label = { Text("Dosis") },
+            placeholder = {
+                Text(
+                    "Ej. 500 mg",
+                    color = Color.Gray
+                )
+            },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true
+        )
+    }
 }
 
 @Composable
@@ -354,11 +396,30 @@ fun TimeSelector(
         is24Hour = false,
     )
 
-    Button(onClick = { showTimePicker = true }) {
-        Text(
-            selectedTime?.let { "Hora: $it" } ?: "Seleccionar hora de toma"
-        )
-    }
+    OutlinedTextField(
+        value = selectedTime?.let {
+            String.format("%02d:%02d", it.hour, it.minute)
+        } ?: "",
+        onValueChange = {},
+        label = { Text("Horario de Toma") },
+        placeholder = {
+            Text(
+                "Seleccionar hora",
+                color = Color.Gray
+            )
+        },
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { showTimePicker = true },
+        readOnly = true,
+        trailingIcon = {
+            Icon(
+                imageVector = Icons.Default.ArrowDropDown,
+                contentDescription = "Seleccionar hora",
+                modifier = Modifier.clickable { showTimePicker = true }
+            )
+        }
+    )
 
     if (showTimePicker) {
         Dialog(onDismissRequest = { showTimePicker = false }) {
@@ -379,13 +440,25 @@ fun TimeSelector(
 @Composable
 private fun SaveButton(
     enabled: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Button(
         onClick = onClick,
-        enabled = enabled
+        enabled = enabled,
+        modifier = modifier
+            .fillMaxWidth()
+            .height(56.dp)
+            .clip(RoundedCornerShape(28.dp)),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = PrimaryOrange
+        )
     ) {
-        Text("Guardar")
+        Text(
+            text = "Guardar",
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Medium
+        )
     }
 }
 
