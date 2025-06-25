@@ -13,14 +13,23 @@ import ar.ort.edu.proyecto_final_grupo_4.receivers.MedicationAlarmReceiver
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.util.Date
+import ar.ort.edu.proyecto_final_grupo_4.domain.model.ScheduledAlarmRecord
+import ar.ort.edu.proyecto_final_grupo_4.domain.repository.MedicationRepository
+import ar.ort.edu.proyecto_final_grupo_4.domain.repository.ScheduleRepository
+import ar.ort.edu.proyecto_final_grupo_4.domain.repository.ScheduledAlarmRepository
+import java.time.format.DateTimeFormatter
 
 class MedicationAlarmManager(
     private val context: Context,
-    private val alarmManager: AlarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+    private val scheduledAlarmRepository: ScheduledAlarmRepository
 ) {
+    private val alarmManager: AlarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+
+    // Define a formatter for HH:mm format
+    private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm") // You can change this pattern if needed (e.g., "hh:mm a" for AM/PM)
 
     @RequiresPermission(Manifest.permission.SCHEDULE_EXACT_ALARM)
-    fun scheduleAlarm(alarm: MedicationAlarm) {
+    suspend fun scheduleAlarm(alarm: MedicationAlarm) {
         Log.d("AlarmDebug", "=== INICIANDO PROGRAMACIÓN DE ALARMA ===")
         Log.d("AlarmDebug", "Alarm object: $alarm")
         Log.d("AlarmDebug", "Original scheduledTime: ${alarm.scheduledTime}")
@@ -29,58 +38,40 @@ class MedicationAlarmManager(
         val now = LocalDateTime.now()
         Log.d("AlarmDebug", "Current time: $now")
 
-        // No need for 'correctedAlarm' logic here; AlarmCalculatorService handles future times.
-        // If alarm.scheduledTime is still in the past, it means AlarmCalculatorService failed.
         if (!alarm.scheduledTime.isAfter(now.plusSeconds(5))) {
             Log.e("AlarmDebug", "ERROR: Attempted to schedule alarm in the past or too soon: ${alarm.scheduledTime}")
-            return // Prevent scheduling alarms that are already past
+            return
         }
 
-        // --- Start of relevant changes for SecurityException ---
-
-        // Check for permission on Android 12+ (API 31+)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) { // Android 12 and above
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             if (!alarmManager.canScheduleExactAlarms()) {
-                // Permission not granted. Log and potentially inform the user.
                 Log.e("AlarmDebug", "❌ SCHEDULE_EXACT_ALARM permission not granted. Cannot schedule exact alarm.")
-                // You might want to show a notification or a dialog prompting the user to grant this permission.
-                // Example: context.startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM))
                 return
             }
         }
 
-        // --- End of relevant changes ---
-
-
-        // Verify the conversion to timestamp
         val zonedDateTime = alarm.scheduledTime.atZone(ZoneId.systemDefault())
-        Log.d("AlarmDebug", "ZonedDateTime: $zonedDateTime")
-        Log.d("AlarmDebug", "Zone: ${ZoneId.systemDefault()}")
-
         val instant = zonedDateTime.toInstant()
-        Log.d("AlarmDebug", "Instant: $instant")
-
         val triggerTime = instant.toEpochMilli()
-        Log.d("AlarmDebug", "TriggerTime (millis): $triggerTime")
 
-        // Verify that the timestamp is valid (future) - Redundant with initial check but harmless
         val currentMillis = System.currentTimeMillis()
-        Log.d("AlarmDebug", "Current millis: $currentMillis")
-        Log.d("AlarmDebug", "Difference: ${triggerTime - currentMillis} ms")
-
-        if (triggerTime <= currentMillis) { // This check should ideally be handled by AlarmCalculatorService
+        if (triggerTime <= currentMillis) {
             Log.e("AlarmDebug", "ERROR: Timestamp is in the past AFTER conversion! This should not happen if AlarmCalculatorService works correctly.")
             return
         }
 
-        // Create the intent
+        // Format the scheduled time for display in the notification
+        val formattedScheduledTime = alarm.scheduledTime.format(timeFormatter)
+
         val intent = Intent(context, MedicationAlarmReceiver::class.java).apply {
+            action = "ar.ort.edu.proyecto_final_grupo_4.MEDICATION_ALARM"
             putExtra("scheduleId", alarm.scheduleId)
             putExtra("medicationName", alarm.medicationName)
             putExtra("dosage", alarm.dosage)
             putExtra("dosageUnit", alarm.dosageUnit)
-            putExtra("originalScheduledTime", alarm.scheduledTime.toString())
+            putExtra("originalScheduledTime", formattedScheduledTime) // <--- Use the formatted time here
             putExtra("triggerTimeMillis", triggerTime)
+            putExtra("requestCode", alarm.requestCode)
             putExtra("isSnoozeAlarm", alarm.isSnoozeAlarm)
         }
 
@@ -93,23 +84,32 @@ class MedicationAlarmManager(
 
         Log.d("AlarmDebug", "RequestCode: ${alarm.requestCode}")
 
-        // Schedule the alarm
         try {
-            // No longer need the redundant Build.VERSION.SDK_INT check here if handled above
             alarmManager.setExactAndAllowWhileIdle(
                 AlarmManager.RTC_WAKEUP,
                 triggerTime,
                 pendingIntent
             )
-            Log.d("AlarmDebug", "✅ Alarm scheduled successfully for ${alarm.medicationName} at ${alarm.scheduledTime}")
+            Log.d("AlarmDebug", "✅ Alarm scheduled successfully for ${alarm.medicationName} at ${alarm.scheduledTime} (Formatted: $formattedScheduledTime)")
 
-            // Verify that the alarm was scheduled
+            // --- SAVE THE SCHEDULED ALARM RECORD HERE ---
+            val record = ScheduledAlarmRecord(
+                scheduleId = alarm.scheduleId,
+                medicationId = alarm.medicationId,
+                requestCode = alarm.requestCode,
+                scheduledTime = alarm.scheduledTime, // Keep original LocalDateTime for internal logic/re-scheduling
+                medicationName = alarm.medicationName,
+                dosage = alarm.dosage,
+                dosageUnit = alarm.dosageUnit,
+                isSnoozeAlarm = alarm.isSnoozeAlarm
+            )
+            scheduledAlarmRepository.insertScheduledAlarmRecord(record)
+            Log.d("AlarmDebug", "ScheduledAlarmRecord saved for ReqCode: ${record.requestCode}")
+
             verifyAlarmScheduled(triggerTime, alarm.medicationName)
 
         } catch (e: SecurityException) {
-            // Explicitly catch SecurityException for exact alarms
             Log.e("AlarmDebug", "❌ SecurityException when scheduling exact alarm. User likely denied SCHEDULE_EXACT_ALARM.", e)
-            // You might want to log this to analytics or show a user-friendly error.
         } catch (e: Exception) {
             Log.e("AlarmDebug", "❌ General Exception scheduling alarm", e)
         }
@@ -125,7 +125,7 @@ class MedicationAlarmManager(
         Log.d("AlarmDebug", "🕐 Alarm will trigger in $minutesFromNow minutes")
     }
 
-    fun scheduleAllAlarms(alarms: List<MedicationAlarm>) {
+    suspend fun scheduleAllAlarms(alarms: List<MedicationAlarm>) {
         Log.d("AlarmDebug", "📋 Scheduling ${alarms.size} alarms")
         alarms.forEachIndexed { index, alarm ->
             Log.d("AlarmDebug", "🔄 Processing alarm ${index + 1}/${alarms.size}")
@@ -133,20 +133,42 @@ class MedicationAlarmManager(
         }
     }
 
-    fun cancelAlarm(requestCode: Int) {
-        Log.d("AlarmDebug", "Attempting to cancel alarm with requestCode $requestCode")
-        val intent = Intent(context, MedicationAlarmReceiver::class.java)
+    suspend fun cancelAlarm(record: ScheduledAlarmRecord) { // Accept the full record
+        Log.d("AlarmDebug", "Attempting to cancel alarm with record: ${record.requestCode} (Med: ${record.medicationName})")
+
+        val triggerTime = record.scheduledTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+
+        val intent = Intent(context, MedicationAlarmReceiver::class.java).apply {
+            action = "ar.ort.edu.proyecto_final_grupo_4.MEDICATION_ALARM" // MUST match
+            putExtra("scheduleId", record.scheduleId)
+            putExtra("medicationName", record.medicationName)
+            putExtra("dosage", record.dosage)
+            putExtra("dosageUnit", record.dosageUnit)
+            // Ensure originalScheduledTime matches the format used in scheduleAlarm!
+            putExtra("originalScheduledTime", record.scheduledTime.format(timeFormatter)) // <--- Use the formatter here too for cancellation consistency
+            putExtra("requestCode", record.requestCode)
+            putExtra("isSnoozeAlarm", record.isSnoozeAlarm)
+            putExtra("triggerTimeMillis", triggerTime)
+        }
+
         val pendingIntent = PendingIntent.getBroadcast(
             context,
-            requestCode,
-            intent,
-            PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+            record.requestCode, // Use the record's specific request code
+            intent,             // The intent MUST be identical (same extras)
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE // Ensure flags match scheduling
         )
         if (pendingIntent != null) {
             alarmManager.cancel(pendingIntent)
-            Log.d("AlarmDebug", "✅ Cancelled existing PendingIntent with requestCode $requestCode")
+            Log.d("AlarmDebug", "✅ Cancelled existing PendingIntent for record: ${record.requestCode}")
         } else {
-            Log.d("AlarmDebug", "❌ No existing PendingIntent found for requestCode $requestCode. It might have already fired or was never scheduled.")
+            Log.d("AlarmDebug", "❌ No existing PendingIntent found for record: ${record.requestCode}. It might have already fired or was never scheduled.")
+        }
+
+        try {
+            scheduledAlarmRepository.deleteScheduledAlarmRecordByRequestCode(record.requestCode)
+            Log.d("AlarmDebug", "✅ Removed record from database for ReqCode: ${record.requestCode}")
+        } catch (e: Exception) {
+            Log.e("AlarmDebug", "❌ Error deleting scheduled alarm record from database for ReqCode: ${record.requestCode}", e)
         }
     }
 }

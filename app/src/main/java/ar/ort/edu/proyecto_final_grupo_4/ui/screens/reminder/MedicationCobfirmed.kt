@@ -113,40 +113,40 @@ fun MedicationConfirmationScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             // Action buttons
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                OutlinedButton(
-                    onClick = {
-                        scheduledMedications.forEach { scheduleWithMedication ->
-                            viewModel.snoozeAlarm(scheduleWithMedication.schedule.scheduleID, 5)
-                        }
-                        showSuccessMessage = true
-                        navController.navigateUp()
-                    },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Icon(Icons.Default.Schedule, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Posponer todo")
-                }
-
-                Button(
-                    onClick = {
-                        scheduledMedications.forEach { scheduleWithMedication ->
-                            viewModel.markAsTaken(scheduleWithMedication.schedule.scheduleID)
-                        }
-                        showSuccessMessage = true
-                        navController.navigateUp()
-                    },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Icon(Icons.Default.Check, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Todos tomados")
-                }
-            }
+//            Row(
+//                modifier = Modifier.fillMaxWidth(),
+//                horizontalArrangement = Arrangement.spacedBy(12.dp)
+//            ) {
+//                OutlinedButton(
+//                    onClick = {
+//                        scheduledMedications.forEach { scheduleWithMedication ->
+//                            viewModel.snoozeAlarm(scheduleWithMedication.schedule.scheduleID, 5)
+//                        }
+//                        showSuccessMessage = true
+//                        navController.navigateUp()
+//                    },
+//                    modifier = Modifier.weight(1f)
+//                ) {
+//                    Icon(Icons.Default.Schedule, contentDescription = null)
+//                    Spacer(modifier = Modifier.width(8.dp))
+//                    Text("Posponer todo")
+//                }
+//
+//                Button(
+//                    onClick = {
+//                        scheduledMedications.forEach { scheduleWithMedication ->
+//                            viewModel.markAsTaken(scheduleWithMedication.schedule.scheduleID)
+//                        }
+//                        showSuccessMessage = true
+//                        navController.navigateUp()
+//                    },
+//                    modifier = Modifier.weight(1f)
+//                ) {
+//                    Icon(Icons.Default.Check, contentDescription = null)
+//                    Spacer(modifier = Modifier.width(8.dp))
+//                    Text("Todos tomados")
+//                }
+//            }
         }
     }
 
