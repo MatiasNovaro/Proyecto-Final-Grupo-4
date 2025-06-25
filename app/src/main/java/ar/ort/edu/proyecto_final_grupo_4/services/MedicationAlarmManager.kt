@@ -81,6 +81,7 @@ class MedicationAlarmManager(
             putExtra("dosageUnit", alarm.dosageUnit)
             putExtra("originalScheduledTime", alarm.scheduledTime.toString())
             putExtra("triggerTimeMillis", triggerTime)
+            putExtra("isSnoozeAlarm", alarm.isSnoozeAlarm)
         }
 
         val pendingIntent = PendingIntent.getBroadcast(

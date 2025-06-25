@@ -167,4 +167,65 @@ class MedicationSchedulerService @Inject constructor(
             Log.e("MedicationSchedulerService", "Error saving log for not taken medication", e)
         }
     }
+    suspend fun snoozeAlarm(scheduleId: Long, minutes: Int) {
+        try {
+            Log.d("MedSchedulerService", "Attempting to create snooze alarm for schedule ID: $scheduleId for $minutes minutes from now.")
+
+            // 1. Dismiss the original notification immediately.
+            notificationDismissalManager.dismissMedicationNotification(scheduleId)
+            Log.d("MedSchedulerService", "Original notification for schedule ID: $scheduleId dismissed.")
+
+            // 2. Calculate the new snooze time based on *current time*.
+            val newSnoozeTime = LocalDateTime.now().plusMinutes(minutes.toLong())
+            Log.d("MedSchedulerService", "Snooze alarm will trigger at: $newSnoozeTime")
+
+            // 3. Retrieve necessary medication details for the temporary alarm payload.
+            val schedule = scheduleRepository.getScheduleById(scheduleId)
+            if (schedule == null) {
+                Log.e("MedSchedulerService", "Schedule not found for ID: $scheduleId. Cannot create snooze alarm.")
+                return
+            }
+            val medication = medicationRepository.getById(schedule.medicationID)
+            if (medication == null) {
+                Log.e("MedSchedulerService", "Medication not found for schedule ID: ${schedule.scheduleID}. Cannot create snooze alarm.")
+                return
+            }
+            val dosageUnit = dosageUnitRepository.getById(medication.dosageUnitID)
+
+            // 4. Generate a *unique* request code for this temporary snooze alarm.
+            //    It MUST be different from the main schedule's request codes.
+            //    A simple way is to use a high offset or combine with current time/scheduleId.
+            //    Using scheduleId * 1000000 + (a time-based component) or similar.
+            //    Using a specific range for snooze alarms can also help.
+            //    For now, let's ensure it's different.
+            //    A common pattern: Use a very large number + scheduleId to prevent collisions with regular alarms.
+            val snoozeRequestCode = (1_000_000_000 + scheduleId + System.currentTimeMillis() % 1_000_000).toInt()
+            // Make sure this is unique enough for your app's needs.
+            // If scheduleId + currentTime % X might repeat too often for different schedules, consider something stronger.
+            // For one-off snoozes, this is usually fine.
+
+            val snoozeMedicationAlarm = MedicationAlarm(
+                scheduleId = scheduleId, // Still link it to the original schedule
+                medicationName = medication.name,
+                dosage = medication.dosage,
+                dosageUnit = dosageUnit?.name.orEmpty(),
+                scheduledTime = newSnoozeTime,
+                requestCode = snoozeRequestCode
+            )
+
+            // 5. Schedule this one-time snooze alarm.
+            alarmManager.scheduleAlarm(snoozeMedicationAlarm)
+            Log.d("MedSchedulerService", "✅ One-time snooze alarm scheduled with RequestCode: ${snoozeMedicationAlarm.requestCode} for ${snoozeMedicationAlarm.scheduledTime}")
+
+            // 6. IMPORTANT: Do NOT save this temporary snooze alarm to scheduledAlarmRepository.
+            //    It's a one-off. It will fire and then naturally be gone.
+            //    This keeps your ScheduledAlarmRecord table only for the recurring, long-term alarms.
+            //    If you *did* want to track it (e.g., for showing "snoozed" state in UI),
+            //    you'd need a separate mechanism or a `isTemporarySnooze` flag on ScheduledAlarmRecord.
+            //    For simplicity of a pure "snooze from now", we omit saving it.
+
+        } catch (e: Exception) {
+            Log.e("MedSchedulerService", "Error creating snooze alarm for schedule ID: $scheduleId: ${e.message}", e)
+        }
+    }
 }

@@ -10,4 +10,5 @@ interface ScheduledAlarmRepository {
     suspend fun deleteScheduledAlarmRecordsByScheduleId(scheduleId: Long)
     suspend fun deleteScheduledAlarmRecordsByMedicationId(medicationId: Long)
     suspend fun deleteAllScheduledAlarmRecords()
+    suspend fun getLatestScheduledAlarmRecordByScheduleId(scheduleId: Long): ScheduledAlarmRecord?
 }
