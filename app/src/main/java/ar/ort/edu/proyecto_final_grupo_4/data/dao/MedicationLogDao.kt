@@ -38,51 +38,54 @@ interface MedicationLogDao {
     suspend fun getMedicationLogs(medicationId: Long): List<MedicationLog>
 
     @Query("""
-        SELECT ml.logID,
-            ml.scheduleID,
-            m.name AS medicationName,
-            m.dosage,
-            ml.wasTaken,
-            ml.timestamp
-        FROM medication_log ml
-        INNER JOIN schedule s ON ml.scheduleID = s.scheduleId
-        INNER JOIN medication m ON s.medicationId = m.medicationId
-        ORDER BY ml.timestamp DESC
-    """)
+    SELECT
+        ml.logID,
+        ml.scheduleID,
+        m.name AS medicationName,
+        ml.dosageValue,   -- CHANGED: Select from medication_log
+        ml.dosageUnit,    -- CHANGED: Select from medication_log
+        ml.wasTaken,
+        ml.timestamp
+    FROM medication_log ml
+    LEFT JOIN schedule s ON ml.scheduleID = s.scheduleId
+    LEFT JOIN medication m ON s.medicationId = m.medicationId
+    ORDER BY ml.timestamp DESC
+""")
     fun getDetailedMedicationLogs(): Flow<List<HistoryLogDisplayItem>>
 
-
+    // For status filtering
     @Query("""
-        SELECT
-            ml.logID,
-            ml.scheduleID,
-            m.name AS medicationName,
-            m.dosage,
-            ml.wasTaken,
-            ml.timestamp
-        FROM medication_log ml
-        INNER JOIN schedule s ON ml.scheduleID = s.scheduleId
-        INNER JOIN medication m ON s.medicationId = m.medicationId
-        WHERE ml.wasTaken = :wasTaken
-        ORDER BY ml.timestamp DESC
-    """)
+    SELECT
+        ml.logID,
+        ml.scheduleID,
+        m.name AS medicationName,
+        ml.dosageValue,   -- CHANGED
+        ml.dosageUnit,    -- CHANGED
+        ml.wasTaken,
+        ml.timestamp
+    FROM medication_log ml
+    LEFT JOIN schedule s ON ml.scheduleID = s.scheduleId
+    LEFT JOIN medication m ON s.medicationId = m.medicationId
+    WHERE ml.wasTaken = :wasTaken
+    ORDER BY ml.timestamp DESC
+""")
     fun getDetailedMedicationLogsByStatus(wasTaken: Boolean): Flow<List<HistoryLogDisplayItem>>
 
-    // Similarly for date range filtering
     @Query("""
-        SELECT
-            ml.logID,
-            ml.scheduleID,
-            m.name AS medicationName,
-            m.dosage,
-            ml.wasTaken,
-            ml.timestamp
-        FROM medication_log ml
-        INNER JOIN schedule s ON ml.scheduleID = s.scheduleId
-        INNER JOIN medication m ON s.medicationId = m.medicationId
-        WHERE ml.timestamp BETWEEN :startTime AND :endTime
-        ORDER BY ml.timestamp DESC
-    """)
+    SELECT
+        ml.logID,
+        ml.scheduleID,
+        m.name AS medicationName,
+        ml.dosageValue,   -- CHANGED
+        ml.dosageUnit,    -- CHANGED
+        ml.wasTaken,
+        ml.timestamp
+    FROM medication_log ml
+    LEFT JOIN schedule s ON ml.scheduleID = s.scheduleId
+    LEFT JOIN medication m ON s.medicationId = m.medicationId
+    WHERE ml.timestamp BETWEEN :startTime AND :endTime
+    ORDER BY ml.timestamp DESC
+""")
     fun getDetailedMedicationLogsByDateRange(startTime: LocalDateTime, endTime: LocalDateTime): Flow<List<HistoryLogDisplayItem>>
 
     @Query("""

@@ -371,9 +371,6 @@ class MedicationDetailViewModel @Inject constructor(
                 val distinctDailyDoseTimes = mutableSetOf<LocalTime>()
                 var currentCycleTime = startTime
 
-                // Generate times for a 24-hour cycle
-                // Loop until we come back to the start time (or just before)
-                // We add the starting time in the main schedule and then generate additional times
                 for (i in 1..24 / intervalHours) { // Generate up to 24 hours of doses
                     currentCycleTime = startTime.plusHours((intervalHours * i).toLong())
                     if (currentCycleTime == startTime && i > 0) break // Stop if we loop back to start time

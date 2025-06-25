@@ -253,13 +253,13 @@ fun HistoryMedicationLogItem(log: HistoryYUiItem) {
 
             Column {
                 Text(
-                    text = log.medicationName,
+                    text = log.medicationName ?: "Medicamento Desconocido",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Medium,
                     color = Color.Black
                 )
                 Text(
-                    text = log.dosage,
+                    text = "${log.dosageValue} ${log.dosageUnit}",
                     fontSize = 14.sp,
                     color = Color.Gray
                 )

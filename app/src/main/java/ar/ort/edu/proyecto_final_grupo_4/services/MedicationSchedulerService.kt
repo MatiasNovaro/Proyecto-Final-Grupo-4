@@ -139,30 +139,59 @@ class MedicationSchedulerService @Inject constructor(
 
     suspend fun logMedicationTaken(scheduleId: Long) {
         try {
+            // Retrieve the necessary details: schedule, medication, and dosage unit
+            val schedule = scheduleRepository.getScheduleById(scheduleId)
+            if (schedule == null) {
+                Log.e("MedicationSchedulerService", "Schedule not found for ID: $scheduleId. Cannot log medication as taken.")
+                return
+            }
+            val medication = medicationRepository.getById(schedule.medicationID)
+            if (medication == null) {
+                Log.e("MedicationSchedulerService", "Medication not found for schedule ID: ${schedule.scheduleID}. Cannot log medication as taken.")
+                return
+            }
+            val dosageUnit = dosageUnitRepository.getById(medication.dosageUnitID)
+
             val medicationLog = MedicationLog(
                 scheduleID = scheduleId,
                 wasTaken = true,
-                timestamp = LocalDateTime.now()
+                timestamp = LocalDateTime.now(),
+                dosageValue = medication.dosage, // Store the actual dosage value at this time
+                dosageUnit = dosageUnit?.name.orEmpty() // Store the actual dosage unit name
             )
             medicationLogRepository.insertLog(medicationLog)
-            // Dismiss the notification. Needs NotificationDismissalManager injected.
-            // notificationDismissalManager.dismissMedicationNotification(scheduleId)
-            Log.d("MedicationSchedulerService", "Log for schedule $scheduleId saved as TAKEN.")
+            Log.d("MedicationSchedulerService", "Log for schedule $scheduleId saved as TAKEN with dosage ${medication.dosage} ${dosageUnit?.name}.")
+            // notificationDismissalManager.dismissMedicationNotification(scheduleId) // Re-enable if needed
         } catch (e: Exception) {
             Log.e("MedicationSchedulerService", "Error saving log for taken medication", e)
         }
     }
+
     suspend fun logMedicationNotTaken(scheduleId: Long) {
         try {
+            // Retrieve the necessary details: schedule, medication, and dosage unit
+            val schedule = scheduleRepository.getScheduleById(scheduleId)
+            if (schedule == null) {
+                Log.e("MedicationSchedulerService", "Schedule not found for ID: $scheduleId. Cannot log medication as not taken.")
+                return
+            }
+            val medication = medicationRepository.getById(schedule.medicationID)
+            if (medication == null) {
+                Log.e("MedicationSchedulerService", "Medication not found for schedule ID: ${schedule.scheduleID}. Cannot log medication as not taken.")
+                return
+            }
+            val dosageUnit = dosageUnitRepository.getById(medication.dosageUnitID)
+
             val medicationLog = MedicationLog(
                 scheduleID = scheduleId,
                 wasTaken = false,
-                timestamp = LocalDateTime.now()
+                timestamp = LocalDateTime.now(),
+                dosageValue = medication.dosage, // Store the actual dosage value at this time
+                dosageUnit = dosageUnit?.name.orEmpty() // Store the actual dosage unit name
             )
             medicationLogRepository.insertLog(medicationLog)
-            // Dismiss the notification. Needs NotificationDismissalManager injected.
-            // notificationDismissalManager.dismissMedicationNotification(scheduleId)
-            Log.d("MedicationSchedulerService", "Log for schedule $scheduleId saved as NOT TAKEN.")
+            Log.d("MedicationSchedulerService", "Log for schedule $scheduleId saved as NOT TAKEN with dosage ${medication.dosage} ${dosageUnit?.name}.")
+            // notificationDismissalManager.dismissMedicationNotification(scheduleId) // Re-enable if needed
         } catch (e: Exception) {
             Log.e("MedicationSchedulerService", "Error saving log for not taken medication", e)
         }

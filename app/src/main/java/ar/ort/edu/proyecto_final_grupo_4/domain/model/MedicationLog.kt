@@ -18,8 +18,10 @@ import java.time.LocalDateTime
 )
 data class MedicationLog(
     @PrimaryKey(autoGenerate = true)
-    val logID: Long=0,
+    val logID: Long = 0,
     val scheduleID: Long,
     val wasTaken: Boolean,
-    val timestamp: LocalDateTime
+    val timestamp: LocalDateTime,
+    val dosageValue: String,
+    val dosageUnit: String
 )

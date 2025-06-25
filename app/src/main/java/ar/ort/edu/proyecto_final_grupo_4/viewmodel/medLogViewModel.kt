@@ -73,7 +73,8 @@ class MedicationLogViewModel @Inject constructor(
                         logID = log.logID,
                         scheduleID = log.scheduleID,
                         medicationName = log.medicationName,
-                        dosage = log.dosage,
+                        dosageValue = log.dosageValue,
+                        dosageUnit = log.dosageUnit,
                         wasTaken = log.wasTaken,
                         timestamp = log.timestamp,
                         dayLabel = dayLabel

@@ -65,25 +65,16 @@ class ScheduleViewModel @Inject constructor(
     fun markAsTaken(scheduleId: Long) {
         viewModelScope.launch {
             try {
-                // Update schedule status (if you have this concept)
-                 scheduleRepository.updateScheduleStatus(scheduleId, MedicationStatus.TAKEN)
+                // Delegate to the service, which will handle fetching dosage and unit
+                medicationSchedulerService.logMedicationTaken(scheduleId)
 
-                // Create and save a MedicationLog entry for "taken"
-                val medicationLog = MedicationLog(
-                    scheduleID = scheduleId,
-                    wasTaken = true,
-                    timestamp = LocalDateTime.now()
-                )
-                medicationlogRepository.insertLog(medicationLog)
-
-                // Dismiss the corresponding notification
+                // Dismiss the corresponding notification (if not handled by service)
                 notificationDismissalManager.dismissMedicationNotification(scheduleId)
-
+                scheduleRepository.updateScheduleStatus(scheduleId, MedicationStatus.TAKEN)
                 Log.d("ScheduleViewModel", "Medication schedule $scheduleId marked as taken and notification dismissed.")
 
             } catch (e: Exception) {
                 Log.e("ScheduleViewModel", "Error marking schedule $scheduleId as taken: ${e.message}", e)
-                // Handle error (e.g., show a Toast or update UI state)
             }
         }
     }
@@ -91,25 +82,16 @@ class ScheduleViewModel @Inject constructor(
     fun markAsSkipped(scheduleId: Long) {
         viewModelScope.launch {
             try {
-                // Update schedule status (if you have this concept)
-                 scheduleRepository.updateScheduleStatus(scheduleId, MedicationStatus.SKIPPED)
+                // Delegate to the service, which will handle fetching dosage and unit
+                medicationSchedulerService.logMedicationNotTaken(scheduleId)
 
-                // Create and save a MedicationLog entry for "skipped"
-                val medicationLog = MedicationLog(
-                    scheduleID = scheduleId,
-                    wasTaken = false,
-                    timestamp = LocalDateTime.now()
-                )
-                medicationlogRepository.insertLog(medicationLog)
-
-                // Dismiss the corresponding notification
+                // Dismiss the corresponding notification (if not handled by service)
                 notificationDismissalManager.dismissMedicationNotification(scheduleId)
-
+                scheduleRepository.updateScheduleStatus(scheduleId, MedicationStatus.SKIPPED)
                 Log.d("ScheduleViewModel", "Medication schedule $scheduleId marked as skipped and notification dismissed.")
 
             } catch (e: Exception) {
                 Log.e("ScheduleViewModel", "Error marking schedule $scheduleId as skipped: ${e.message}", e)
-                // Handle error
             }
         }
     }

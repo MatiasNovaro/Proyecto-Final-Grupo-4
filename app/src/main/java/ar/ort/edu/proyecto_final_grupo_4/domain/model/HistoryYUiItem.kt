@@ -4,10 +4,11 @@ import java.time.LocalDateTime
 
 data class HistoryYUiItem(
     val logID: Long,
-    val scheduleID: Long,
-    val medicationName: String,
-    val dosage: String,
+    val scheduleID: Long?,
+    val medicationName: String?,
+    val dosageValue: String, // CHANGE: Use this for value
+    val dosageUnit: String,  // CHANGE: Use this for unit
     val wasTaken: Boolean,
     val timestamp: LocalDateTime,
-    val dayLabel: String // This is for the UI
+    val dayLabel: String
 )
