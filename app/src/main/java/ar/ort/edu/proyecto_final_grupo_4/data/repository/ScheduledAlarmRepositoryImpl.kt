@@ -35,4 +35,8 @@ class ScheduledAlarmRepositoryImpl @Inject constructor(
     override suspend fun deleteAllScheduledAlarmRecords() {
         scheduledAlarmDao.deleteAllRecords()
     }
+
+    override suspend fun getLatestScheduledAlarmRecordByScheduleId(scheduleId: Long): ScheduledAlarmRecord? {
+        return scheduledAlarmDao.getLatestScheduledAlarmRecordByScheduleId(scheduleId)
+    }
 }

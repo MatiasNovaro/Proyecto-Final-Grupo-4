@@ -20,6 +20,7 @@ import ar.ort.edu.proyecto_final_grupo_4.domain.repository.DosageUnitRepository
 import ar.ort.edu.proyecto_final_grupo_4.domain.repository.MedicationLogRepository
 import ar.ort.edu.proyecto_final_grupo_4.domain.repository.MedicationRepository
 import ar.ort.edu.proyecto_final_grupo_4.domain.utils.FrequencyType
+import ar.ort.edu.proyecto_final_grupo_4.services.MedicationSchedulerService
 import ar.ort.edu.proyecto_final_grupo_4.services.NotificationDismissalManager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
@@ -37,7 +38,8 @@ class ScheduleViewModel @Inject constructor(
     private val medicationRepository: MedicationRepository,
     private val dosageUnitRepository: DosageUnitRepository,
     private val medicationlogRepository: MedicationLogRepository,
-    private val notificationDismissalManager: NotificationDismissalManager
+    private val notificationDismissalManager: NotificationDismissalManager,
+    private val medicationSchedulerService: MedicationSchedulerService
 ) : ViewModel() {
 
     private val _schedules = MutableStateFlow<List<Schedule>>(emptyList())
@@ -113,10 +115,13 @@ class ScheduleViewModel @Inject constructor(
     }
     fun snoozeAlarm(scheduleId: Long, minutes: Int) {
         viewModelScope.launch {
-            // Your existing snooze logic, which will reschedule the alarm
-            // (You'll need an instance of MedicationAlarmManager in ViewModel for this,
-            // or pass it via dependency injection)
-            // Example: medicationAlarmManager.snoozeAlarm(scheduleId, minutes)
+            try {
+                // Delegate the snooze logic to MedicationSchedulerService
+                medicationSchedulerService.snoozeAlarm(scheduleId, minutes)
+                Log.d("ScheduleViewModel", "Snooze request for schedule $scheduleId by $minutes minutes delegated.")
+            } catch (e: Exception) {
+                Log.e("ScheduleViewModel", "Error delegating snooze for schedule $scheduleId: ${e.message}", e)
+            }
         }
     }
     // Nuevo método que retorna el ID del schedule insertado

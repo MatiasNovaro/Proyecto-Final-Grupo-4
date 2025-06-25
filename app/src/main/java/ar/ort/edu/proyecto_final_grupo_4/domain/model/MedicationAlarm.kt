@@ -10,7 +10,8 @@ data class MedicationAlarm(
     val dosage: String,
     val dosageUnit: String,
     var scheduledTime: LocalDateTime,
-    val requestCode: Int = generateRequestCode(scheduleId, scheduledTime)
+    val requestCode: Int = generateRequestCode(scheduleId, scheduledTime),
+    val isSnoozeAlarm: Boolean = false
 
 ) {
     companion object {

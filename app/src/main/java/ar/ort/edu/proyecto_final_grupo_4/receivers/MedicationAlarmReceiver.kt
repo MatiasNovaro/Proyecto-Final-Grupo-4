@@ -50,7 +50,8 @@ class MedicationAlarmReceiver : BroadcastReceiver() {
         val dosage = intent.getStringExtra("dosage") ?: ""
         val scheduleId = intent.getLongExtra("scheduleId", -1)
         val originalTime = intent.getStringExtra("originalScheduledTime") ?: "Unknown"
-        val triggerTimeMillis = intent.getLongExtra("triggerTimeMillis", System.currentTimeMillis()) // retrieve it
+        val triggerTimeMillis = intent.getLongExtra("triggerTimeMillis", System.currentTimeMillis())
+        val isSnoozeAlarm = intent.getBooleanExtra("isSnoozeAlarm", false)
 
         Log.d("AlarmReceiver", "Medication: $medName, Dosage: $dosage, Schedule ID: $scheduleId")
 

@@ -12,7 +12,7 @@ import java.time.LocalDateTime
             entity = Schedule::class,
             parentColumns = ["scheduleID"],
             childColumns = ["scheduleID"],
-            onDelete = ForeignKey.CASCADE
+            onDelete = ForeignKey.NO_ACTION
         )
     ]
 )

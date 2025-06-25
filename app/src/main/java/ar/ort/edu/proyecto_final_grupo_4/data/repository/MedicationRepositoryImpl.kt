@@ -45,5 +45,6 @@ class MedicationRepositoryImpl @Inject constructor(
     override suspend fun existsByName(name: String): Boolean {
         return medicationDao.existsByName(name)
     }
+
 }
 

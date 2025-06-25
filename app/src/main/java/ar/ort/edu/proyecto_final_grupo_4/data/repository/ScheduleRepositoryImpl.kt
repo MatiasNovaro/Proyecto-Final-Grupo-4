@@ -56,6 +56,9 @@ class ScheduleRepositoryImpl @Inject constructor(
     override fun getSchedulesWithMedicationsByIds(scheduleIds: List<Long>): Flow<List<ScheduleWithMedication>> {
         return scheduleDao.getSchedulesWithMedicationsByIds(scheduleIds)
     }
+    override suspend fun deactivateSchedulesForMedication(medicationId: Long, newIsActive: Boolean) {
+        scheduleDao.deactivateSchedulesForMedication(medicationId, newIsActive)
+    }
 
     override suspend fun updateScheduleStatus(scheduleId: Long, status: MedicationStatus) {
         scheduleDao.updateScheduleStatus(scheduleId, status)

@@ -27,5 +27,8 @@ interface ScheduledAlarmDao {
     suspend fun deleteByMedicationId(medicationId: Long)
 
     @Query("DELETE FROM scheduled_alarm_records")
-    suspend fun deleteAllRecords() // For full clear (e.g., app reset)
+    suspend fun deleteAllRecords()
+
+    @Query("SELECT * FROM scheduled_alarm_records WHERE scheduleId = :scheduleId ORDER BY scheduledTime DESC LIMIT 1")
+    suspend fun getLatestScheduledAlarmRecordByScheduleId(scheduleId: Long): ScheduledAlarmRecord?
 }
