@@ -123,44 +123,46 @@ fun AddMedicationScreen(navController: NavController) {
                 )
 
                 Spacer(modifier = Modifier.weight(1f))
-            }
 
-            SaveButton(
-                enabled = name.isNotBlank() && nameError == null &&
-                        dosis.isNotBlank() && selectedUnit != null &&
-                        selectedTime != null && selectedFrequency != null,
-                onClick = {
-                    user?.let { user ->
-                        selectedUnit?.let { unit ->
-                            selectedTime?.let { time ->
-                                selectedFrequency?.let { frequency ->
-                                    val med = Medication(
-                                        medicationID = 0,
-                                        userID = user.userID,
-                                        name = name,
-                                        dosage = dosis,
-                                        dosageUnitID = unit.dosageUnitID
-                                    )
-                                    medVM.addMedicationWithScheduleAndFrequency(
-                                        medication = med,
-                                        frequency = frequency,
-                                        startTime = time,
-                                        selectedWeekDays = selectedWeekDays,
-                                        scheduleVM = scheduleVM,
-                                    )
+                SaveButton(
+                    enabled = name.isNotBlank() && nameError == null &&
+                            dosis.isNotBlank() && selectedUnit != null &&
+                            selectedTime != null && selectedFrequency != null,
+                    onClick = {
+                        user?.let { user ->
+                            selectedUnit?.let { unit ->
+                                selectedTime?.let { time ->
+                                    selectedFrequency?.let { frequency ->
+                                        val med = Medication(
+                                            medicationID = 0,
+                                            userID = user.userID,
+                                            name = name,
+                                            dosage = dosis,
+                                            dosageUnitID = unit.dosageUnitID
+                                        )
+                                        medVM.addMedicationWithScheduleAndFrequency(
+                                            medication = med,
+                                            frequency = frequency,
+                                            startTime = time,
+                                            selectedWeekDays = selectedWeekDays,
+                                            scheduleVM = scheduleVM,
+                                        )
 
-                                    coroutineScope.launch {
-                                        snackbarHostState.showSnackbar("¡Guardado con éxito!")
+                                        coroutineScope.launch {
+                                            snackbarHostState.showSnackbar("¡Guardado con éxito!")
+                                        }
                                     }
                                 }
                             }
                         }
-                    }
-                },
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(16.dp)
-            )
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                )
+            }
+
+
         }
     }
 }

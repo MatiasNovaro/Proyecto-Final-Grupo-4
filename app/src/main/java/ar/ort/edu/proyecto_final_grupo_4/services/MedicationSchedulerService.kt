@@ -1,5 +1,6 @@
 package ar.ort.edu.proyecto_final_grupo_4.services
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.util.Log
 import ar.ort.edu.proyecto_final_grupo_4.domain.model.IndividualAlarmOccurrence
@@ -45,6 +46,7 @@ class MedicationSchedulerService @Inject constructor(
         }
     }
 
+    @SuppressLint("ScheduleExactAlarm")
     private suspend fun scheduleAlarmsForMedication(
         schedule: Schedule,
         medication: Medication

@@ -14,12 +14,11 @@ interface ScheduleRepository {
     suspend fun getSchedulesForMedication(medicationId: Long): List<Schedule>
     suspend fun getAllSchedules(): List<Schedule>
     suspend fun getScheduleById(scheduleId: Long): Schedule?
-
-    // Métodos adicionales que podrías necesitar
     suspend fun getActiveSchedules(): List<Schedule>
     suspend fun getSchedulesForToday(): List<Schedule>
     suspend fun getSchedulesWithMedication(): List<ScheduleWithDetails>
     suspend fun deleteSchedulesForMedication(medicationId: Long)
     fun getSchedulesWithMedicationsByIds(scheduleIds: List<Long>): Flow<List<ScheduleWithMedication>>
     suspend fun updateScheduleStatus(scheduleId: Long, status: MedicationStatus)
+    suspend fun deactivateSchedulesForMedication(medicationId: Long, newIsActive: Boolean)
 }

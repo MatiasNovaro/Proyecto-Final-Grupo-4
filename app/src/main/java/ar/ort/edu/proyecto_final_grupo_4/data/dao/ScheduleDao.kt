@@ -43,4 +43,7 @@ interface ScheduleDao {
     @Update
     suspend fun update(schedule: Schedule)
 
+    @Query("UPDATE schedule SET isActive = :newIsActive WHERE medicationID = :medicationId AND isActive = 1")
+    suspend fun deactivateSchedulesForMedication(medicationId: Long, newIsActive: Boolean)
+
 }

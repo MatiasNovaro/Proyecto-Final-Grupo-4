@@ -18,12 +18,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import ar.ort.edu.proyecto_final_grupo_4.domain.model.MedicationStatus
 import ar.ort.edu.proyecto_final_grupo_4.domain.model.ScheduleWithMedication
 import ar.ort.edu.proyecto_final_grupo_4.domain.repository.MedicationRepository
 import ar.ort.edu.proyecto_final_grupo_4.viewmodel.MedicationViewModel
+import ar.ort.edu.proyecto_final_grupo_4.viewmodel.ReminderViewModel
 import ar.ort.edu.proyecto_final_grupo_4.viewmodel.ScheduleViewModel
 import kotlinx.coroutines.delay
 import java.time.LocalDateTime
@@ -36,27 +38,10 @@ fun MedicationConfirmationScreen(
     navController: NavController,
 ) {
     val viewModel: ScheduleViewModel = hiltViewModel()
-    // Collect the Flow of ScheduleWithMedication directly from the ViewModel
-    // 'scheduledMedications' will now be a List<ScheduleWithMedication>
     val scheduledMedications by viewModel.getSchedulesWithMedications(scheduleIds).collectAsState(initial = emptyList())
 
-    // Loading state: true if the list is empty and we are still waiting for data
-    // This handles cases where scheduleIds are provided but data isn't loaded yet.
     val isLoading = scheduledMedications.isEmpty() && scheduleIds.isNotEmpty()
     var showSuccessMessage by remember { mutableStateOf(false) }
-    // Consider how you dismiss notifications. If `dismissNotifications` needs a Context,
-    // it's usually handled by a BroadcastReceiver or a dedicated service/manager
-    // that the ViewModel could interact with. This block remains commented for now
-    // as it requires external context.
-    /*
-    LaunchedEffect(fromNotification) {
-        if (fromNotification) {
-            // You would call a function here that can dismiss notifications,
-            // perhaps provided by the ViewModel or a Dagger/Hilt injected manager.
-            // Example: viewModel.dismissNotifications(scheduleIds)
-        }
-    }
-    */
 
     Column(
         modifier = Modifier
@@ -176,14 +161,24 @@ fun MedicationConfirmationScreen(
 
 @Composable
 fun MedicationConfirmationCard(
-    scheduleWithMedication: ScheduleWithMedication, // Changed to receive the combined object
+    scheduleWithMedication: ScheduleWithMedication,
     onTaken: () -> Unit,
     onSkipped: () -> Unit,
     onSnooze: (Int) -> Unit,
 ) {
+    val reminderViewModel: ReminderViewModel = hiltViewModel()
+
+    // Load the dosage unit when the scheduleWithMedication changes
+    LaunchedEffect(scheduleWithMedication) {
+        reminderViewModel.getDosageUnit(scheduleWithMedication.medication.dosageUnitID)
+    }
+
+    // Collect the dosage unit state
+    val dosageUnit by reminderViewModel.dosageUnit.collectAsState() // This holds DosageUnit?
+
     var isExpanded by remember { mutableStateOf(false) }
     var showSnoozeOptions by remember { mutableStateOf(false) }
-    var dosageUnit =
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -201,24 +196,24 @@ fun MedicationConfirmationCard(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = scheduleWithMedication.medication.name, // Access name from medication
+                        text = scheduleWithMedication.medication.name,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = scheduleWithMedication.medication.dosage, // Access dosage from medication
+                        text = "${scheduleWithMedication.medication.dosage} ${dosageUnit?.name.orEmpty()}",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "Programado: ${scheduleWithMedication.schedule.startTime}", // Access time from schedule
+                        text = "Programado: ${scheduleWithMedication.schedule.startTime.format(DateTimeFormatter.ofPattern("HH:mm"))}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
-                // Status indicator
-                when (scheduleWithMedication.schedule.status) { // Access status from schedule
+                // Status indicator (no changes here)
+                when (scheduleWithMedication.schedule.status) {
                     MedicationStatus.PENDING -> {
                         Icon(
                             Icons.Default.AccessTime,
@@ -240,7 +235,6 @@ fun MedicationConfirmationCard(
                             tint = Color.Red
                         )
                     }
-
                 }
             }
 
@@ -248,23 +242,22 @@ fun MedicationConfirmationCard(
             if (isExpanded) {
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Medication details - instructions
-                if (scheduleWithMedication.medication.name.isNotEmpty()) { // Access instructions from medication
+                if (scheduleWithMedication.medication.name.isNotEmpty()) {
                     Text(
-                        text = "Instrucciones:",
+                        text = "Dosis:",
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = scheduleWithMedication.medication.dosage,
+                        text = "${scheduleWithMedication.medication.dosage} ${dosageUnit?.name.orEmpty()}", // Combine dosage with unit name here too
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                 }
 
-                // Action buttons
-                if (scheduleWithMedication.schedule.status == MedicationStatus.PENDING) { // Access status from schedule
+                // Action buttons (no changes here)
+                if (scheduleWithMedication.schedule.status == MedicationStatus.PENDING) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -273,25 +266,25 @@ fun MedicationConfirmationCard(
                             onClick = { showSnoozeOptions = !showSnoozeOptions },
                             modifier = Modifier.weight(1f)
                         ) {
-                            Text("Posponer")
+                            Text("Posponer", fontSize = 10.sp)
                         }
 
                         OutlinedButton(
                             onClick = onSkipped,
                             modifier = Modifier.weight(1f)
                         ) {
-                            Text("Omitir")
+                            Text("Omitir", fontSize = 11.sp)
                         }
 
                         Button(
                             onClick = onTaken,
                             modifier = Modifier.weight(1f)
                         ) {
-                            Text("Tomado")
+                            Text("Tomado", fontSize = 11.sp)
                         }
                     }
 
-                    // Snooze options
+                    // Snooze options (no changes here)
                     if (showSnoozeOptions) {
                         Spacer(modifier = Modifier.height(8.dp))
                         Row(

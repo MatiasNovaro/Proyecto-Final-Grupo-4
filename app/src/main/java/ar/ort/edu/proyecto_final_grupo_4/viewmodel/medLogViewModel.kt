@@ -76,7 +76,7 @@ class MedicationLogViewModel @Inject constructor(
                         dosage = log.dosage,
                         wasTaken = log.wasTaken,
                         timestamp = log.timestamp,
-                        dayLabel = dayLabel // Add the computed dayLabel
+                        dayLabel = dayLabel
                     )
                 }
                 .sortedByDescending { it.timestamp } // Ensure descending order (most recent first)

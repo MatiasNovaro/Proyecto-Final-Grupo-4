@@ -102,7 +102,7 @@ class MedicationDetailViewModel @Inject constructor(
                         selectedFrequency = inferredFrequencyOption,
                         selectedWeekDays = selectedWeekDays,
                         startTime = firstSchedule.startTime,
-                        isActive = firstSchedule.isActive // Assume active status is for the overall medication pattern
+                        isActive = firstSchedule.isActive
                     )
                 }
             } catch (e: Exception) {
@@ -142,24 +142,23 @@ class MedicationDetailViewModel @Inject constructor(
             try {
                 val currentState = uiState.value
 
-                // 1. Update Medication (existing ID)
                 val updatedMedication = Medication(
                     medicationID = currentState.medicationId,
                     name = currentState.name,
                     dosage = currentState.dosage,
                     dosageUnitID = currentState.selectedUnit?.dosageUnitID ?: 0L,
-                    // Assume userID doesn't change on edit, retrieve from existing medication
-                    userID = medicationRepository.getById(currentState.medicationId)?.userID ?: 1
+                    userID = medicationRepository.getById(currentState.medicationId)?.userID ?: 1 // Get existing user ID
                 )
                 medicationRepository.updateMedication(updatedMedication)
 
-                // 2. Clear ALL existing schedules and alarms for this medication
-                // Important: Cancel alarms BEFORE deleting schedules if alarm manager relies on schedule IDs
                 medicationSchedulerService.cancelAlarmsForMedication(currentState.medicationId)
-                scheduleRepository.deleteSchedulesForMedication(currentState.medicationId)
+
+                scheduleRepository.deactivateSchedulesForMedication(
+                    medicationId = currentState.medicationId,
+                    newIsActive = false,
+                    )
 
 
-                // 3. Re-create new schedules and alarms using the shared logic
                 currentState.selectedFrequency?.let { frequency ->
                     recreateMedicationSchedules(
                         medicationId = currentState.medicationId,
@@ -169,6 +168,9 @@ class MedicationDetailViewModel @Inject constructor(
                         isActive = currentState.isActive
                     )
                 }
+
+                medicationSchedulerService.scheduleAllActiveMedications()
+
 
                 _uiState.update { it.copy(isLoading = false) }
                 _eventFlow.value = MedicationDetailEvent.SaveSuccess
@@ -182,76 +184,137 @@ class MedicationDetailViewModel @Inject constructor(
     }
 
 
-    // --- Shared Schedule Generation Logic (adapted from your addMedicationWithScheduleAndFrequency) ---
+    // In MedicationDetailViewModel.kt
+// Make sure you have this helper function (copied from AddMedicationViewModel)
+    private fun generateAllPotentialDailyTimes(frequency: FrequencyOption, startTime: LocalTime): List<LocalTime> {
+        return when (frequency.frequencyType) {
+            FrequencyType.TIMES_PER_DAY -> {
+                val times = frequency.intervalValue ?: 1
+                if (times <= 1) return listOf(startTime)
+
+                val hoursSpan = 12
+                val intervalMinutes = if (times > 1) (hoursSpan.toDouble() / (times - 1)) * 60 else 0.0
+
+                (0 until times).map { i ->
+                    startTime.plusMinutes((intervalMinutes * i).toLong())
+                }.distinct().sorted()
+            }
+
+            FrequencyType.HOURS_INTERVAL -> {
+                val intervalHours = frequency.intervalValue ?: 0
+                if (intervalHours <= 0 || intervalHours >= 24) return listOf(startTime)
+
+                val doses = mutableSetOf<LocalTime>()
+                var currentTime = startTime
+                do {
+                    doses.add(currentTime)
+                    currentTime = currentTime.plusHours(intervalHours.toLong())
+                } while (currentTime != startTime)
+
+                doses.sorted()
+            }
+
+            else -> {
+                listOf(startTime)
+            }
+        }
+    }
+
 
     private suspend fun recreateMedicationSchedules(
         medicationId: Long,
         frequency: FrequencyOption,
         startTime: LocalTime,
         selectedWeekDays: List<Int>,
-        isActive: Boolean
+        isActive: Boolean // This will be the isActive state for the NEW schedules
     ) {
-        // 1. Create base schedule
-        val baseSchedule = Schedule(
-            scheduleID = 0, // Will be auto-generated
-            medicationID = medicationId,
-            frequencyType = frequency.frequencyType,
-            intervalValue = frequency.intervalValue,
-            startTime = startTime,
-            endTime = calculateEndTime(frequency, startTime),
-            isActive = isActive, // Use the UI's isActive state
-            startDate = LocalDate.now() // Or retrieve and use the original startDate if desired
-        )
+        val today = LocalDate.now()
+        val tomorrow = today.plusDays(1)
+        val nowTime = LocalTime.now() // Current time for filtering today's doses
 
-        val baseScheduleId = scheduleRepository.insertSchedule(baseSchedule)
+        // This section now matches the AddMedicationViewModel's logic
+        if (frequency.frequencyType == FrequencyType.DAILY ||
+            frequency.frequencyType == FrequencyType.WEEKLY ||
+            frequency.frequencyType == FrequencyType.AS_NEEDED) {
 
-        // 2. Add weekdays (if applicable)
-        when (frequency.frequencyType) {
-            FrequencyType.WEEKLY -> {
-                if (selectedWeekDays.isNotEmpty()) {
-                    // Use a new function or directly insert DayOfWeek
-                    addWeekDaysForSchedule(baseScheduleId, selectedWeekDays)
-                }
-            }
-            FrequencyType.DAILY -> {
-                // DAILY schedules imply all days (0-6)
-                addWeekDaysForSchedule(baseScheduleId, (0..6).toList())
-            }
-            else -> { /* No specific days for other types */ }
-        }
-
-        // Schedule alarm for the base schedule (this needs to be handled by the scheduler service)
-        // Note: medicationSchedulerService.scheduleAllActiveMedications() will be called at the end
-        // to re-evaluate all alarms, including the newly created ones.
-
-        // 3. Generate additional schedules (if any)
-        val additionalTimes = generateAdditionalTimes(frequency, startTime)
-
-        for (time in additionalTimes) {
-            val additionalSchedule = baseSchedule.copy(
-                scheduleID = 0, // New ID for each additional schedule
-                startTime = time,
-                isActive = isActive // Ensure additional schedules also use the overall isActive state
+            // Create a single base schedule that starts today and recurs indefinitely
+            val baseSchedule = Schedule(
+                scheduleID = 0,
+                medicationID = medicationId,
+                frequencyType = frequency.frequencyType,
+                intervalValue = frequency.intervalValue,
+                startTime = startTime,
+                endTime = calculateEndTime(frequency, startTime),
+                isActive = isActive, // Use the UI's isActive state
+                startDate = today, // Starts today
+                endDate = null // Recurring indefinitely
             )
-            val additionalScheduleId = scheduleRepository.insertSchedule(additionalSchedule)
 
-            // Re-add weekdays for additional schedules (if applicable)
+            val baseScheduleId = scheduleRepository.insertSchedule(baseSchedule)
+
+            // Add days of the week if applicable
             when (frequency.frequencyType) {
                 FrequencyType.WEEKLY -> {
                     if (selectedWeekDays.isNotEmpty()) {
-                        addWeekDaysForSchedule(additionalScheduleId, selectedWeekDays)
+                        addWeekDaysForSchedule(baseScheduleId, selectedWeekDays)
                     }
                 }
                 FrequencyType.DAILY -> {
-                    addWeekDaysForSchedule(additionalScheduleId, (0..6).toList())
+                    addWeekDaysForSchedule(baseScheduleId, (0..6).toList()) // All days for DAILY
                 }
-                else -> { /* nada */ }
+                else -> { /* AS_NEEDED, no specific days */ }
             }
-            // Alarms for additional schedules will also be handled by scheduleAllActiveMedications()
+
+        } else { // Handle TIMES_PER_DAY and HOURS_INTERVAL with the "today-only" and "recurring from tomorrow" split
+
+            // Get all potential times for a 24-hour cycle based on frequency and startTime
+            val allPotentialDailyTimes = generateAllPotentialDailyTimes(frequency, startTime)
+
+            // --- 2. Create Schedules for Today (only for future doses) ---
+            // These schedules have a definite end date (today)
+            val todayFutureTimes = allPotentialDailyTimes.filter { it.isAfter(nowTime) }
+
+            if (todayFutureTimes.isNotEmpty()) {
+                Log.d("MedicationDetailVM", "Creating ${todayFutureTimes.size} schedules for today.")
+                for (time in todayFutureTimes) {
+                    val todaySchedule = Schedule(
+                        scheduleID = 0,
+                        medicationID = medicationId,
+                        frequencyType = frequency.frequencyType,
+                        intervalValue = frequency.intervalValue,
+                        startTime = time,
+                        endTime = calculateEndTime(frequency, time),
+                        isActive = isActive,
+                        startDate = today, // This schedule is only for today
+                        endDate = today    // Ends today
+                    )
+                    scheduleRepository.insertSchedule(todaySchedule)
+                    // No need for addWeekDays for these types based on your original logic
+                }
+            }
+
+            // --- 3. Create Schedules for Recurring (starting tomorrow) ---
+            // These schedules recur indefinitely
+            Log.d("MedicationDetailVM", "Creating ${allPotentialDailyTimes.size} recurring schedules starting tomorrow.")
+            for (time in allPotentialDailyTimes) { // Use all times for the recurring pattern
+                val recurringSchedule = Schedule(
+                    scheduleID = 0,
+                    medicationID = medicationId,
+                    frequencyType = frequency.frequencyType,
+                    intervalValue = frequency.intervalValue,
+                    startTime = time,
+                    endTime = calculateEndTime(frequency, time),
+                    isActive = isActive,
+                    startDate = tomorrow, // This schedule starts tomorrow
+                    endDate = null        // And recurs indefinitely
+                )
+                scheduleRepository.insertSchedule(recurringSchedule)
+                // No need for addWeekDays for these types
+            }
         }
 
-        // After all schedules are inserted, re-schedule all alarms for the medication.
-        // This is crucial because old alarms were cancelled and new schedules need new alarms.
+        // Schedule all active medications (newly created ones).
+        // This should be done once at the very end after all schedules are inserted.
         medicationSchedulerService.scheduleAllActiveMedications()
     }
 
