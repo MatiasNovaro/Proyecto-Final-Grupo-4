@@ -6,6 +6,7 @@ import java.time.ZoneId
 
 data class MedicationAlarm(
     val scheduleId: Long,
+    val medicationId: Long,
     val medicationName: String,
     val dosage: String,
     val dosageUnit: String,

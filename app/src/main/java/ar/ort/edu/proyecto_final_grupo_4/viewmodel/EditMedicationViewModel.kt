@@ -147,18 +147,21 @@ class MedicationDetailViewModel @Inject constructor(
                     name = currentState.name,
                     dosage = currentState.dosage,
                     dosageUnitID = currentState.selectedUnit?.dosageUnitID ?: 0L,
-                    userID = medicationRepository.getById(currentState.medicationId)?.userID ?: 1 // Get existing user ID
+                    userID = medicationRepository.getById(currentState.medicationId)?.userID ?: 1
                 )
                 medicationRepository.updateMedication(updatedMedication)
 
+                // Step 1: Cancel all alarms related to this medication
                 medicationSchedulerService.cancelAlarmsForMedication(currentState.medicationId)
 
+                // Step 2: Deactivate all existing schedules for this medication
+                // Ensure you pass the newStatus explicitly
                 scheduleRepository.deactivateSchedulesForMedication(
                     medicationId = currentState.medicationId,
                     newIsActive = false,
-                    )
+                )
 
-
+                // Step 3: Re-create new schedules based on the updated UI state
                 currentState.selectedFrequency?.let { frequency ->
                     recreateMedicationSchedules(
                         medicationId = currentState.medicationId,
@@ -169,8 +172,8 @@ class MedicationDetailViewModel @Inject constructor(
                     )
                 }
 
+                // Step 4: Schedule all currently active alarms (this will include the newly created ones)
                 medicationSchedulerService.scheduleAllActiveMedications()
-
 
                 _uiState.update { it.copy(isLoading = false) }
                 _eventFlow.value = MedicationDetailEvent.SaveSuccess
@@ -370,6 +373,7 @@ class MedicationDetailViewModel @Inject constructor(
 
                 val distinctDailyDoseTimes = mutableSetOf<LocalTime>()
                 var currentCycleTime = startTime
+
 
                 for (i in 1..24 / intervalHours) { // Generate up to 24 hours of doses
                     currentCycleTime = startTime.plusHours((intervalHours * i).toLong())

@@ -53,7 +53,6 @@ class MedicationSchedulerService @Inject constructor(
     ) {
         val nextAlarms: List<IndividualAlarmOccurrence> = alarmCalculator.calculateNextAlarms(schedule, medication)
 
-        // Convert IndividualAlarmOccurrence to MedicationAlarm for the AlarmManager
         val medicationAlarmsToSchedule = nextAlarms.map { individualAlarm ->
             MedicationAlarm(
                 scheduleId = individualAlarm.scheduleId,
@@ -61,25 +60,41 @@ class MedicationSchedulerService @Inject constructor(
                 dosage = individualAlarm.dosage,
                 dosageUnit = individualAlarm.dosageUnit,
                 scheduledTime = individualAlarm.scheduledTime,
-                requestCode = individualAlarm.uniqueRequestCode
+                requestCode = individualAlarm.uniqueRequestCode,
+                isSnoozeAlarm = false,
+                medicationId = medication.medicationID // These are regular, non-snooze alarms
             )
         }
 
-        // Schedule and save each alarm record
         medicationAlarmsToSchedule.forEach { alarmToSchedule ->
-            alarmManager.scheduleAlarm(alarmToSchedule)
+            // Schedule the alarm using the MedicationAlarmManager
+            alarmManager.scheduleAlarm(alarmToSchedule) // This function is now responsible for inserting the ScheduledAlarmRecord
 
-            // Save the details of the *successfully scheduled* alarm
+            // --- REMOVE THE DUPLICATE SCHEDULED_ALARM_RECORD INSERTION HERE ---
+            // The alarmManager.scheduleAlarm(alarmToSchedule) call should now internally
+            // handle the insertion of the ScheduledAlarmRecord.
+            // If you keep this, you'll be inserting two records for every scheduled alarm.
+            // THIS PART IS NOW HANDLED BY MedicationAlarmManager.scheduleAlarm()
+            // So, remove the block below:
+            /*
             val record = ScheduledAlarmRecord(
                 scheduleId = alarmToSchedule.scheduleId,
-                medicationId = medication.medicationID, // Make sure Medication has an ID property
+                medicationId = medication.medicationID,
                 requestCode = alarmToSchedule.requestCode,
-                scheduledTime = alarmToSchedule.scheduledTime
+                scheduledTime = alarmToSchedule.scheduledTime,
+                id = TODO(), // DELETE THIS LINE
+                medicationName = TODO(), // DELETE THIS LINE
+                dosage = TODO(), // DELETE THIS LINE
+                dosageUnit = TODO(), // DELETE THIS LINE
+                isSnoozeAlarm = TODO() // DELETE THIS LINE
             )
             scheduledAlarmRepository.insertScheduledAlarmRecord(record)
             Log.d("MedSchedulerService", "Scheduled alarm and saved record: ${record.requestCode} for ${record.scheduledTime}")
+            */
+            // The log below can stay, as it indicates the alarm was processed for scheduling.
+            Log.d("MedSchedulerService", "Alarm processing complete for: ${alarmToSchedule.medicationName} at ${alarmToSchedule.scheduledTime}")
         }
-        Log.d("MedSchedulerService", "Finished scheduling ${medicationAlarmsToSchedule.size} alarms for schedule ID: ${schedule.scheduleID}")
+        Log.d("MedSchedulerService", "Finished processing ${medicationAlarmsToSchedule.size} alarms for schedule ID: ${schedule.scheduleID}")
     }
 
     suspend fun rescheduleMedication(scheduleId: Long) {
@@ -112,7 +127,7 @@ class MedicationSchedulerService @Inject constructor(
         try {
             val scheduledRecords = scheduledAlarmRepository.getScheduledAlarmRecordsByScheduleId(scheduleId)
             scheduledRecords.forEach { record ->
-                alarmManager.cancelAlarm(record.requestCode)
+                alarmManager.cancelAlarm(record)
                 scheduledAlarmRepository.deleteScheduledAlarmRecordByRequestCode(record.requestCode) // Delete from DB
                 Log.d("MedSchedulerService", "Cancelled and removed record for requestCode: ${record.requestCode} (Schedule ID: ${record.scheduleId})")
             }
@@ -127,7 +142,7 @@ class MedicationSchedulerService @Inject constructor(
         try {
             val scheduledRecords = scheduledAlarmRepository.getScheduledAlarmRecordsByMedicationId(medicationId)
             scheduledRecords.forEach { record ->
-                alarmManager.cancelAlarm(record.requestCode)
+                alarmManager.cancelAlarm(record)
                 scheduledAlarmRepository.deleteScheduledAlarmRecordByRequestCode(record.requestCode) // Delete from DB
                 Log.d("MedSchedulerService", "Cancelled and removed record for requestCode: ${record.requestCode} (Med ID: ${record.medicationId})")
             }
@@ -196,6 +211,7 @@ class MedicationSchedulerService @Inject constructor(
             Log.e("MedicationSchedulerService", "Error saving log for not taken medication", e)
         }
     }
+    @SuppressLint("ScheduleExactAlarm")
     suspend fun snoozeAlarm(scheduleId: Long, minutes: Int) {
         try {
             Log.d("MedSchedulerService", "Attempting to create snooze alarm for schedule ID: $scheduleId for $minutes minutes from now.")
@@ -239,7 +255,9 @@ class MedicationSchedulerService @Inject constructor(
                 dosage = medication.dosage,
                 dosageUnit = dosageUnit?.name.orEmpty(),
                 scheduledTime = newSnoozeTime,
-                requestCode = snoozeRequestCode
+                requestCode = snoozeRequestCode,
+                medicationId = medication.medicationID,
+                isSnoozeAlarm = true
             )
 
             // 5. Schedule this one-time snooze alarm.

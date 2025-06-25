@@ -145,8 +145,11 @@ class AppModule {
     fun provideAlarmCalculatorService(dosageUnitRepository: DosageUnitRepository): AlarmCalculatorService = AlarmCalculatorService(dosageUnitRepository)
 
     @Provides
-    fun provideMedicationAlarmManager(@ApplicationContext context: Context): MedicationAlarmManager {
-        return MedicationAlarmManager(context)
+    fun provideMedicationAlarmManager(
+        @ApplicationContext context: Context,
+        scheduledAlarmRepository: ScheduledAlarmRepository // Inject the repository here
+    ): MedicationAlarmManager {
+        return MedicationAlarmManager(context, scheduledAlarmRepository)
     }
     @Provides
     @Singleton
